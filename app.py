@@ -20,18 +20,27 @@ if prompt := st.chat_input():
     with st.chat_message("assistant"):
         with st.spinner("Lorvantis düşünüyor..."):
             try:
-                # Ücretsiz ve key istemeyen açık AI servisi
+                # Pollinations AI Endpoint
                 url = "https://text.pollinations.ai/"
+                
+                # Mesaj geçmişini temiz formatlama
+                formatted_messages = [
+                    {"role": m["role"], "content": m["content"]} 
+                    for m in st.session_state.messages
+                ]
+                
                 payload = json.dumps({
-                    "messages": st.session_state.messages,
-                    "model": "searchgpt"
+                    "messages": formatted_messages,
+                    "model": "openai"
                 }).encode("utf-8")
                 
-                req = urllib.request.Request(
-                    url, 
-                    data=payload, 
-                    headers={'Content-Type': 'application/json'}
-                )
+                # 403 engelini aşmak için tarayıcı başlıkları (User-Agent)
+                headers = {
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                }
+                
+                req = urllib.request.Request(url, data=payload, headers=headers)
                 
                 with urllib.request.urlopen(req) as response:
                     reply = response.read().decode('utf-8')
