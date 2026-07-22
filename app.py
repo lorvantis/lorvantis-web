@@ -35,7 +35,7 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
         message_placeholder.markdown("Düşünüyor... 💭")
         
         try:
-            # Ngrok tüneli üzerinden bilgisayarındaki Ollama'ya bağlanma (headers eklendi!)
+            # Ngrok tüneli üzerinden bilgisayarındaki Ollama'ya bağlanma (HEADERS eklendi!)
             response = requests.post(
                 f"{NGROK_URL}/api/generate",
                 json={
