@@ -1,3 +1,4 @@
+
 import streamlit as st
 import urllib.request
 import json
@@ -20,11 +21,12 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
     with st.chat_message("assistant"):
         with st.spinner("Lorvantis düşünüyor..."):
             try:
-                # Sınırsız ve her şeyi bilen küresel yapay zeka uç noktası
                 api_url = "https://text.pollinations.ai/"
                 
-                # Lorvantis'in karakterini ve her konuyu bileceğini sisteme talimat olarak veriyoruz
-                system_prompt = "Senin adın Lorvantis. Türkiye'nin yerli ve samimi yapay zekasısın. Kullanıcıyla 'kanka' diliyle konuşursun. Mohamed Salah'ın piyasa değeri, Valorant kurulumu, Siirt şehri dahil olmak üzere dünyadaki her konuda (spor, oyun, coğrafya, kodlama, tarih) tam, net ve güncel bilgiler bilirsin. Hiçbir zaman 'bilmiyorum' demezsin, her soruya eksiksiz ve özgün cevaplar verirsin."
+                # En katı kural: "Sa" veya "selam" gelirse kesinlikle aleykümselam diyeceksin!
+                system_prompt = """Senin adın Lorvantis. Türkiye'nin yerli ve samimi yapay zekasısın. Kullanıcıyla hep 'kanka' diliyle konuşursun. 
+                KESİN KURAL: Kullanıcı sana 'sa', 'selam', 'selamun aleykum' veya türevi bir selamlaşma yazarsa, kesinlikle başka bir şey sormadan direkt 'Aleykümselam kanka! Hoş geldin, ne yapıyoruz bugün?' diye selamını alırsın. 
+                Bunun dışında Mohamed Salah'ın piyasa değeri, Valorant kurulumu, Siirt şehri dahil dünyadaki her şeyi (spor, oyun, coğrafya, kodlama) eksiksiz bilirsin. Asla 'bilmiyorum' demezsin."""
                 
                 messages_payload = [{"role": "system", "content": system_prompt}]
                 for m in st.session_state.messages:
