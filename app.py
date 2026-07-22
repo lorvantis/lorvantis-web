@@ -1,67 +1,52 @@
 import streamlit as st
 import requests
 
-# --- SAYFA AYARLARI (Mobil Uyumlu) ---
-st.set_page_config(
-    page_title="Lorvantis",
-    page_icon="🤖",
-    layout="centered"
-)
+# Sayfa ayarları
+st.set_page_config(page_title="Lorvantis AI", page_icon="🤖")
+st.title("🤖 Lorvantis AI Assistant")
 
-# Koyu Tema Şıklığı
-st.markdown("""
-    <style>
-    .main { background-color: #000000; }
-    stTextInput > div > div > input { background-color: #121212; color: white; }
-    </style>
-""", unsafe_allow_html=True)
+# ngrok tünel adresimiz ve modelimiz
+NGROK_URL = "https://footer-shimmer-drinking.ngrok-free.dev"
+MODEL_NAME = "llama3" # Bilgisayarındaki model adı farklıysa burayı değiştir (örn: mistral, qwen)
 
-st.title("LORVANTIS 🤖")
-st.caption("Kanka Tarzı Yapay Zeka Arayüzü")
-
-# Sohbet Geçmişi Hafızası
+# Sohbet geçmişini saklama
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Eski Mesajları Ekrana Bas
+# Geçmiş mesajları ekrana yazırma
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Kullanıcıdan Mesaj Alımı
-if prompt := st.chat_input("Bir şeyler yaz kanka..."):
-    # Kullanıcı Mesajı
+# Kullanıcıdan mesaj alma
+if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
+    # Kullanıcı mesajını göster ve kaydet
+    st.chat_message("user").markdown(prompt)
     st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
 
-    # Yapay Zeka Cevabı
+    # Yanıt üretiliyor göstergesi
     with st.chat_message("assistant"):
-        with st.spinner("Düşünüyorum kanka..."):
-            try:
-                full_prompt = (
-                    "Senin adın Lorvantis. Samimi, kanka tarzında ve akıllı bir Türkçe yapay zekasın. "
-                    "Cevap uzunluğunu kullanıcının sorusuna göre ayarla. Teknik anlatımda detay ver, "
-                    "basit sorularda kısa kes.\n\n"
-                    f"Kullanıcı: {prompt}\nLorvantis:"
-                )
+        message_placeholder = st.empty()
+        message_placeholder.markdown("Thinking... 💭")
+        
+        try:
+            # Ngrok tüneli üzerinden bilgisayarındaki Ollama'ya bağlanma
+            response = requests.post(
+                f"{NGROK_URL}/api/generate",
+                json={
+                    "model": MODEL_NAME,
+                    "prompt": prompt,
+                    "stream": False
+                },
+                timeout=60
+            )
+            
+            if response.status_code == 200:
+                answer = response.json().get("response", "Yanıt alınamadı.")
+                message_placeholder.markdown(answer)
+                st.session_state.messages.append({"role": "assistant", "content": answer})
+            else:
+                message_placeholder.error(f"Hata oluştu! Kod: {response.status_code}")
                 
-                payload = {
-                    "model": "llama3.2",
-                    "prompt": full_prompt,
-                    "stream": False,
-                    "options": {"temperature": 0.3, "num_predict": 500}
-                }
-                
-                # Bilgisayarındaki Ollama'ya Bağlanır
-                res = requests.post("http://localhost:11434/api/generate", json=payload)
-                
-                if res.status_code == 200:
-                    answer = res.json().get("response", "Cevap yok kanka.")
-                else:
-                    answer = "Ollama ile bağlantı kurulamadı kanka."
-            except Exception as e:
-                answer = "Hata oluştu kanka, model açık mı kontrol et!"
-
-            st.markdown(answer)
-            st.session_state.messages.append({"role": "assistant", "content": answer})
+        except Exception as e:
+            message_placeholder.error("Model kapalı veya bağlantı kurulamadı. Lütfen bilgisayarında Ollama ve ngrok'un açık olduğundan emin ol!")
