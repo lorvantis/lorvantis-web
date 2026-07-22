@@ -19,16 +19,16 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
     with st.chat_message("assistant"):
         with st.spinner("Lorvantis düşünüyor..."):
             try:
-                # Doğrudan g4f provider yapısını kullanan hatasız çağrı
+                # Doğrudan ve en güvenli g4f tamamlama metodu
                 response = g4f.ChatCompletion.create(
-                    model=g4f.models.gpt_4o_mini,
+                    model="gpt-4o-mini",
                     messages=[{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
                 )
                 reply = str(response)
             except Exception as e:
                 try:
                     response = g4f.ChatCompletion.create(
-                        model=g4f.models.gpt_35_turbo,
+                        model="gpt-3.5-turbo",
                         messages=[{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
                     )
                     reply = str(response)
