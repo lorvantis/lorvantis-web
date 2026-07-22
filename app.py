@@ -27,7 +27,7 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                 )
                 reply = response.choices[0].message.content
             except Exception as e:
-                reply = f"Bağlantı hatası oluştu, lütfen tekrar dene. ({e})"
+                reply = f"Bağlantı hatası: {e}"
 
             full_reply = f"{reply}\n\n🌐 https://lorvantis-web.streamlit.app"
             st.write(full_reply)
