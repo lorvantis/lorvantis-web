@@ -1,94 +1,41 @@
-import customtkinter as ctk
-import threading
+import streamlit as st
 from g4f.client import Client
 
-ctk.set_appearance_mode("Dark")
-ctk.set_default_color_theme("blue")
+st.set_page_config(page_title="Lorvantis AI", page_icon="🤖")
 
-class LorvantisDesktop(ctk.CTk):
-    def __init__(self):
-        super().__init__()
+st.title("🤖 Lorvantis AI")
+st.caption("Türkiye'nin web yapay zekası")
 
-        self.title("Lorvantis AI")
-        self.geometry("600x720")
+client = Client()
 
-        self.client = Client()
-        self.messages = [{"role": "assistant", "content": "Merhaba! Ben Lorvantis. Sana nasıl yardımcı olabilirim?"}]
+if "messages" not in st.session_state:
+    st.session_state["messages"] = [{"role": "assistant", "content": "Merhaba! Ben Lorvantis. Sana nasıl yardımcı olabilirim?"}]
 
-        # Başlık Bölümü
-        self.label = ctk.CTkLabel(self, text="🤖 Lorvantis AI", font=ctk.CTkFont(size=24, weight="bold"))
-        self.label.pack(pady=(15, 2))
+for msg in st.session_state.messages:
+    st.chat_message(msg["role"]).write(msg["content"])
 
-        # Alt Yazı
-        self.subtitle = ctk.CTkLabel(self, text="Türkiye'nin web yapay zekası", font=ctk.CTkFont(size=13, slant="italic"), text_color="gray70")
-        self.subtitle.pack(pady=(0, 10))
+if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    st.chat_message("user").write(prompt)
 
-        # Sohbet Alanı
-        self.chat_area = ctk.CTkTextbox(self, width=540, height=480, state="disabled")
-        self.chat_area.pack(pady=10)
-
-        # Giriş Alanı
-        self.input_frame = ctk.CTkFrame(self)
-        self.input_frame.pack(fill="x", padx=20, py=10)
-
-        self.entry = ctk.CTkEntry(self.input_frame, placeholder_text="Lorvantis'e bir şeyler yaz...", width=410)
-        self.entry.pack(side="left", padx=5)
-        self.entry.bind("<Return>", lambda event: self.start_send_thread())
-
-        self.send_btn = ctk.CTkButton(self.input_frame, text="Gönder", width=90, command=self.start_send_thread)
-        self.send_btn.pack(side="right", padx=5)
-
-        self.update_chat("Lorvantis: Merhaba! Ben Lorvantis. Sana nasıl yardımcı olabilirim?")
-
-    def update_chat(self, text):
-        self.chat_area.configure(state="normal")
-        self.chat_area.insert("end", text + "\n\n")
-        self.chat_area.configure(state="disabled")
-        self.chat_area.see("end")
-
-    def start_send_thread(self):
-        user_text = self.entry.get().strip()
-        if not user_text:
-            return
-
-        # Kullanıcı mesajını yaz
-        self.entry.delete(0, "end")
-        self.update_chat(f"Sen: {user_text}")
-        self.messages.append({"role": "user", "content": user_text})
-
-        # Arayüzü kilitle ve "Düşünüyor..." durumuna getir
-        self.entry.configure(state="disabled")
-        self.send_btn.configure(state="disabled", text="Düşünüyor...")
-
-        # Yanıtı ekranı dondurmadan arka planda al
-        threading.Thread(target=self.get_ai_response, daemon=True).start()
-
-    def get_ai_response(self):
-        try:
-            # Ana model isteği
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=self.messages
-            )
-            reply = response.choices[0].message.content
-        except Exception:
-            # Yedek model (ilki yoğun olursa otomatik geçer)
+    with st.chat_message("assistant"):
+        with st.spinner("Lorvantis düşünüyor..."):
             try:
-                response = self.client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=self.messages
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=st.session_state.messages
                 )
                 reply = response.choices[0].message.content
-            except Exception as e:
-                reply = f"Şu an bağlantı kurulamadı, lütfen tekrar dene. ({e})"
+            except Exception:
+                try:
+                    response = client.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=st.session_state.messages
+                    )
+                    reply = response.choices[0].message.content
+                except Exception as e:
+                    reply = f"Şu an bağlantı kurulamadı: {e}"
 
-        # Arayüzü güncelle ve kilitleri aç
-        self.update_chat(f"Lorvantis: {reply}")
-        self.messages.append({"role": "assistant", "content": reply})
-
-        self.entry.configure(state="normal")
-        self.send_btn.configure(state="normal", text="Gönder")
-
-if __name__ == "__main__":
-    app = LorvantisDesktop()
-    app.mainloop()
+            full_reply = f"{reply}\n\n🌐 https://lorvantis-web.streamlit.app"
+            st.write(full_reply)
+            st.session_state.messages.append({"role": "assistant", "content": full_reply})
