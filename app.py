@@ -8,7 +8,7 @@ st.title("🤖 Lorvantis AI")
 st.caption("Türkiye'nin akıllı web yapay zekası")
 
 if "messages" not in st.session_state:
-    st.session_state["messages"] = [{"role": "assistant", "content": "Merhaba! Ben Lorvantis. Sana nasıl yardımcı olabilirim?"}]
+    st.session_state["messages"] = [{"role": "assistant", "content": "Selam kanka! Ben Lorvantis 😎 Ne var ne yok, dal içeri 🔥"}]
 
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
@@ -22,13 +22,13 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
             try:
                 api_url = "https://text.pollinations.ai/"
                 
-                system_prompt = """Senin adın Lorvantis. Türkiye'nin yerli ve samimi yapay zekasısın. Kullanıcıyla hep 'kanka' diliyle konuşursun. 
-                KESİN KURAL: Kullanıcı sana 'sa', 'selam', 'selamun aleykum' veya türevi bir selamlaşma yazarsa, kesinlikle başka bir şey sormadan direkt 'Aleykümselam kanka! Hoş geldin, ne yapıyoruz bugün?' diye selamını alırsın. 
-                Bunun dışında Mohamed Salah'ın piyasa değeri, Valorant kurulumu, Siirt şehri dahil dünyadaki her şeyi (spor, oyun, coğrafya, kodlama) eksiksiz bilirsin. Asla 'bilmiyorum' demezsin."""
+                # Karakteri ve tarzı tam oturtan sistem promptu
+                system_prompt = """Senin adın Lorvantis. Türkiye'nin yerli, samimi, kanka dilli yapay zekasısın. 
+                Asla robota bağlamazsın. Kullanıcı sana 'nasılsın' derse asla hata mesajı vermez, 'İyiyim kanka, sen nasılsın, ne kaynatıyoruz?' gibi samimi cevaplar verirsin. 
+                Gerektiğinde kısa ve net, gerektiğinde uzun ve detaylı, bol bol emoji kullanarak konuşursun. Dünyadaki her şeyi (kodlama, oyun, spor, teknoloji) çok iyi bilirsin. Asla 'bilmiyorum' demezsin."""
                 
                 messages_payload = [{"role": "system", "content": system_prompt}]
                 
-                # Geçmişin sadece son 10 mesajını alalım ki kafa karışmasın
                 for m in st.session_state.messages[-10:]:
                     messages_payload.append({"role": m["role"], "content": m["content"]})
                 
@@ -38,7 +38,6 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                     "jsonMode": False
                 }).encode('utf-8')
                 
-                # BURASI ÖNEMLİ: method='POST' ekledik ki istek reddedilmesin!
                 req = urllib.request.Request(
                     api_url, 
                     data=payload, 
@@ -52,11 +51,10 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                 with urllib.request.urlopen(req, timeout=30) as response:
                     reply = response.read().decode('utf-8').strip()
                     if not reply:
-                        reply = "Kanka sunucu anlık boş döndü, bir daha yazar mısın?"
+                        reply = "Kanka sunucu boş döndü bi secdeye varıp geliyim, tekrar yaz 😄"
             except Exception as e:
-                # Hatanın ne olduğunu görmek için konsola da basalım
-                print(f"Hata detayı: {e}")
-                reply = f"Kanka anlık bir ağ yoğunluğu oldu ama buradayım! '{prompt}' konusuna devam edelim, ne öğrenmek istiyorsun?"
+                # Artık hata verirse gizlemiyoruz, direkt hatayı kanka diliyle ekrana basıyoruz ki ne kopuyor bilelim
+                reply = f"Olay mahalli karıştı kanka, API bi patlak verdi: {e} 💀 Ama sen dert etme, konuyu baştan alalım!"
 
             st.write(reply)
             st.session_state.messages.append({"role": "assistant", "content": reply})
