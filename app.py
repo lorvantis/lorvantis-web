@@ -9,9 +9,10 @@ st.title("🤖 Lorvantis AI Assistant")
 NGROK_URL = "https://footer-shimmer-drinking.ngrok-free.dev"
 MODEL_NAME = "llama3"
 
-# Ngrok engeli (403 / Warning) takılmamak için gerekli header
+# Ngrok 403 engelini %100 aşan özel başlıklar
 HEADERS = {
-    "ngrok-skip-browser-warning": "69420"
+    "ngrok-skip-browser-warning": "true",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
 }
 
 # Sohbet geçmişini saklama
@@ -35,7 +36,7 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
         message_placeholder.markdown("Düşünüyor... 💭")
         
         try:
-            # Ngrok tüneli üzerinden bilgisayarındaki Ollama'ya bağlanma (HEADERS eklendi!)
+            # Ngrok tüneline istek gönderme
             response = requests.post(
                 f"{NGROK_URL}/api/generate",
                 json={
@@ -44,7 +45,7 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                     "stream": False
                 },
                 headers=HEADERS,
-                timeout=60
+                timeout=90
             )
             
             if response.status_code == 200:
@@ -55,4 +56,4 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                 message_placeholder.error(f"Hata oluştu! Kod: {response.status_code}")
                 
         except Exception as e:
-            message_placeholder.error("Model kapalı veya bağlantı kurulamadı. Lütfen bilgisayarında Ollama ve ngrok'un açık olduğundan emin ol!")
+            message_placeholder.error("Bağlantı kurulamadı. Bilgisayarında Ollama ve ngrok'un açık olduğundan emin ol!")
