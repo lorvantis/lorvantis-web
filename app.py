@@ -26,15 +26,8 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                     messages=st.session_state.messages
                 )
                 reply = response.choices[0].message.content
-            except Exception:
-                try:
-                    response = client.chat.completions.create(
-                        model="gpt-3.5-turbo",
-                        messages=st.session_state.messages
-                    )
-                    reply = response.choices[0].message.content
-                except Exception as e:
-                    reply = f"Şu an bağlantı kurulamadı: {e}"
+            except Exception as e:
+                reply = f"Bağlantı hatası oluştu, lütfen tekrar dene. ({e})"
 
             full_reply = f"{reply}\n\n🌐 https://lorvantis-web.streamlit.app"
             st.write(full_reply)
