@@ -19,15 +19,21 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
         with st.spinner("Lorvantis düşünüyor..."):
             p = prompt.lower()
             
-            # Kelime bazlı akıllı yanıt motoru (İnternet kopmalarına ve 402 hatalarına son!)
+            # Akıllı yanıt motoru v2
             if "nasılsın" in p or "ne var ne yok" in p:
                 reply = "Eyvallah kanka, bomba gibiyim! Sen nasılsın, nasıl gidiyor?"
-            elif "merhaba" in p or "selam" in p:
-                reply = "Aleykümselam kanka, hoş geldin! Ne yapıyoruz bugün?"
+            elif "sa" in p or "selam" in p or "merhaba" in p:
+                reply = "Aleykümselam kanka! Hoş geldin, ne yapıyoruz bugün?"
             elif "adın" in p or "kimsin" in p:
                 reply = "Ben Lorvantis! Senin kodlayıp hayata geçirdiğin yapay zeka asistanınım."
+            elif "windows 10" in p or "format" in p or "yükle" in p:
+                reply = """Windows 10 yüklemek için şu adımları takip edebilirsin kanka:
+1. **USB Bellek Hazırla:** En az 8 GB'lık bir boş USB bul.
+2. **Medya Oluşturma Aracı:** Microsoft'un resmi sitesinden "Windows 10 İndir" aracını indirip USB'ye yazdır.
+3. **Boot Et:** Bilgisayarı yeniden başlatıp BIOS tuşuna (genelde F12, F8 veya Del) basarak USB'yi ilk sıraya al.
+4. **Kurulum:** Ekrana gelen kurulum adımlarını takip et, diski seç ve yüklemeyi tamamla! Driver'ları da güncellemeyi unutma."""
             elif "python" in p or "kod" in p:
-                reply = f"Python ve kodlama işleri bende kanka! '{prompt}' konusunda sabaha kadar yazabiliriz."
+                reply = f"Python işleri bende kanka! '{prompt}' konusunda ne yapmak istiyorsun, kodu yazalım."
             elif "fenerbahçe" in p or "fb" in p:
                 reply = "Renklerimizi unutmayız kanka! Sarı-Lacivert ensesindeyiz her şeyin."
             else:
