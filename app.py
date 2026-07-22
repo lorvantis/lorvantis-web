@@ -14,7 +14,7 @@ for msg in st.session_state.messages:
 def akilli_cevap_bul(prompt):
     p = prompt.lower().strip()
     
-    # 1. Net Selamlaşmalar (Sadece cümle başı veya tam kelimeyse selam al, "detay" içinde "sa" geçince selam çakmasın!)
+    # 1. Net Selamlaşmalar
     if p in ["sa", "selam", "merhaba", "hey", "selamün aleyküm"] or p.startswith("selam "):
         return "Aleykümselam kanka! Hoş geldin, bugün hangi projeyle veya soruyla uğraşıyoruz?"
         
@@ -27,6 +27,14 @@ def akilli_cevap_bul(prompt):
     elif "muvafakatname" in p:
         return "Muvafakatname kanka, resmi ve hukuki olarak **'onay verme, rıza gösterme'** belgesidir. Bir kişinin başka birine işlem yapabilmesi için yazılı izin vermesidir."
 
+    # 2. BIOS Nasıl Açılır? (Net ve nokta atışı cevap)
+    elif "bios" in p or "boot menu" in p:
+        return """BIOS'u açmak için şu adımları izle kanka:
+1. **Bilgisayarı Yeniden Başlat:** Bilgisayarını tamamen kapat veya yeniden başlat.
+2. **Tuşlara Aralıksız Bas:** Ekran ilk açıldığında (marka logosunun geldiği anda) klavyeden sürekli olarak **F2**, **Del (Delete)**, **F12** veya **F10** tuşlarına aralıksız tıkla (Anakart markasına göre değişir: ASUS/MSI genelde Del veya F2, Lenovo/HP F10 veya F12).
+3. **BIOS Ekranı:** Doğru tuşa bastıysan mavi veya siyah tabanlı BIOS menüsü karşına gelecektir!"""
+
+    # 3. Windows / Format Kurulumu
     elif "windows 10" in p or "format" in p or "kurulum" in p:
         return """Windows 10 yüklemek için şu adımları takip edebilirsin kanka:
 1. En az 8 GB boş bir USB bul.
@@ -40,14 +48,14 @@ def akilli_cevap_bul(prompt):
     elif "fenerbahçe" in p or "fb" in p:
         return "Renkler belli kanka! Sarı-Lacivert rüzgarı esiyor, her kulvarda sonuna kadar destekliyoruz."
 
-    # 2. Detaylı / Mala Anlat / Açıkla istekleri
+    # 4. Detaylı / Mala Anlat istekleri
     elif any(k in p for k in ["detay", "anlat", "açıkla", "mala anlat", "uzun"]):
         return f"Eyvallah kanka, '{prompt}' dedin. İstediğin konuyu en ince detayına kadar parçalarına ayıralım: Temel mantığı kavradıktan sonra bu işin üstesinden rahatlıkla gelirsin. Tam olarak hangi noktayı açmamı istiyorsun?"
 
-    # 3. Esnek Genel Yaklaşım (Yazım hatalarını ve devrik cümleleri tolere eder)
+    # 5. Esnek Genel Yaklaşım
     else:
         if "nasıl" in p:
-            return f"'{prompt}' işini çözmek için mantık basit kanka: Adım adım ilerleyeceğiz, önce temeli atıp sonra üstüne çıkacağız. Süreci başlatmak için ilk adımı nereye atalım?"
+            return f"'{prompt}' konusunu çözmek için adımlar net kanka: İşlemi gerçekleştirmek için önce sistemi hazırlayıp ardından ilgili menüden veya komuttan devam etmelisin. Tam olarak hangi cihaz veya program üzerinden yapıyorsun?"
         elif "nedir" in p or "ne demek" in p:
             return f"Kanka '{prompt}' dediğin olay, teknik veya günlük dilde kendine has bir yere sahip olan kavramdır. Detaylıca açmamı ister misin?"
         else:
