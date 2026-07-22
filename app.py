@@ -7,13 +7,18 @@ st.title("🤖 Lorvantis AI Assistant")
 
 # ngrok tünel adresimiz ve modelimiz
 NGROK_URL = "https://footer-shimmer-drinking.ngrok-free.dev"
-MODEL_NAME = "llama3" # Bilgisayarındaki model adı farklıysa burayı değiştir (örn: mistral, qwen)
+MODEL_NAME = "llama3"
+
+# Ngrok engeli (403 / Warning) takılmamak için gerekli header
+HEADERS = {
+    "ngrok-skip-browser-warning": "69420"
+}
 
 # Sohbet geçmişini saklama
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Geçmiş mesajları ekrana yazırma
+# Geçmiş mesajları ekrana yazdırma
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
@@ -27,10 +32,10 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
     # Yanıt üretiliyor göstergesi
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
-        message_placeholder.markdown("Thinking... 💭")
+        message_placeholder.markdown("Düşünüyor... 💭")
         
         try:
-            # Ngrok tüneli üzerinden bilgisayarındaki Ollama'ya bağlanma
+            # Ngrok tüneli üzerinden bilgisayarındaki Ollama'ya bağlanma (headers eklendi!)
             response = requests.post(
                 f"{NGROK_URL}/api/generate",
                 json={
@@ -38,6 +43,7 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                     "prompt": prompt,
                     "stream": False
                 },
+                headers=HEADERS,
                 timeout=60
             )
             
