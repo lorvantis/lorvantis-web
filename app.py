@@ -1,5 +1,5 @@
 import streamlit as st
-import g4f
+import requests
 
 st.set_page_config(page_title="Lorvantis AI", page_icon="🤖")
 
@@ -19,21 +19,21 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
     with st.chat_message("assistant"):
         with st.spinner("Lorvantis düşünüyor..."):
             try:
-                # Doğrudan ve en güvenli g4f tamamlama metodu
-                response = g4f.ChatCompletion.create(
-                    model="gpt-4o-mini",
-                    messages=[{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
+                # Doğrudan HTTP üzerinden çalışan, patlamayan kararlı API
+                response = requests.post(
+                    "https://text.pollinations.ai/",
+                    json={
+                        "messages": [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages],
+                        "model": "openai"
+                    },
+                    timeout=30
                 )
-                reply = str(response)
+                if response.status_code == 200:
+                    reply = response.text
+                else:
+                    reply = "Şu an sunucu yanıt vermedi, tekrar dener misin?"
             except Exception as e:
-                try:
-                    response = g4f.ChatCompletion.create(
-                        model="gpt-3.5-turbo",
-                        messages=[{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
-                    )
-                    reply = str(response)
-                except Exception as err:
-                    reply = f"Bağlantı kurulamadı: {err}"
+                reply = f"Bağlantı hatası: {e}"
 
             full_reply = f"{reply}\n\n🌐 https://lorvantis-web.streamlit.app"
             st.write(full_reply)
