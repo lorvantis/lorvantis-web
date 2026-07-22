@@ -1,59 +1,42 @@
 import streamlit as st
-import requests
+import json
+import urllib.request
 
-# Sayfa ayarları
 st.set_page_config(page_title="Lorvantis AI", page_icon="🤖")
-st.title("🤖 Lorvantis AI Assistant")
 
-# ngrok tünel adresimiz ve modelimiz
-NGROK_URL = "https://footer-shimmer-drinking.ngrok-free.dev"
-MODEL_NAME = "llama3"
+st.title("🤖 Lorvantis AI")
+st.caption("7/24 Aktif Web Yapay Zekası")
 
-# Ngrok 403 engelini %100 aşan özel başlıklar
-HEADERS = {
-    "ngrok-skip-browser-warning": "true",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-}
-
-# Sohbet geçmişini saklama
 if "messages" not in st.session_state:
-    st.session_state.messages = []
+    st.session_state["messages"] = [{"role": "assistant", "content": "Merhaba! Ben Lorvantis. Sana nasıl yardımcı olabilirim?"}]
 
-# Geçmiş mesajları ekrana yazdırma
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+for msg in st.session_state.messages:
+    st.chat_message(msg["role"]).write(msg["content"])
 
-# Kullanıcıdan mesaj alma
-if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
-    # Kullanıcı mesajını göster ve kaydet
-    st.chat_message("user").markdown(prompt)
+if prompt := st.chat_input():
     st.session_state.messages.append({"role": "user", "content": prompt})
+    st.chat_message("user").write(prompt)
 
-    # Yanıt üretiliyor göstergesi
     with st.chat_message("assistant"):
-        message_placeholder = st.empty()
-        message_placeholder.markdown("Düşünüyor... 💭")
-        
-        try:
-            # Ngrok tüneline istek gönderme
-            response = requests.post(
-                f"{NGROK_URL}/api/generate",
-                json={
-                    "model": MODEL_NAME,
-                    "prompt": prompt,
-                    "stream": False
-                },
-                headers=HEADERS,
-                timeout=90
-            )
-            
-            if response.status_code == 200:
-                answer = response.json().get("response", "Yanıt alınamadı.")
-                message_placeholder.markdown(answer)
-                st.session_state.messages.append({"role": "assistant", "content": answer})
-            else:
-                message_placeholder.error(f"Hata oluştu! Kod: {response.status_code}")
+        with st.spinner("Lorvantis düşünüyor..."):
+            try:
+                # Ücretsiz ve key istemeyen açık AI servisi
+                url = "https://text.pollinations.ai/"
+                payload = json.dumps({
+                    "messages": st.session_state.messages,
+                    "model": "searchgpt"
+                }).encode("utf-8")
                 
-        except Exception as e:
-            message_placeholder.error("Bağlantı kurulamadı. Bilgisayarında Ollama ve ngrok'un açık olduğundan emin ol!")
+                req = urllib.request.Request(
+                    url, 
+                    data=payload, 
+                    headers={'Content-Type': 'application/json'}
+                )
+                
+                with urllib.request.urlopen(req) as response:
+                    reply = response.read().decode('utf-8')
+                
+                st.write(reply)
+                st.session_state.messages.append({"role": "assistant", "content": reply})
+            except Exception as e:
+                st.error(f"Bir hata oluştu: {e}")
