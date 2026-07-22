@@ -19,21 +19,19 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
     with st.chat_message("assistant"):
         with st.spinner("Lorvantis düşünüyor..."):
             try:
-                # Doğrudan HTTP üzerinden çalışan, patlamayan kararlı API
-                response = requests.post(
-                    "https://text.pollinations.ai/",
-                    json={
-                        "messages": [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages],
-                        "model": "openai"
-                    },
-                    timeout=30
-                )
-                if response.status_code == 200:
+                # Pollinations AI için en garanti ve güncel istek formatı
+                payload = {
+                    "messages": [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages],
+                    "seed": 42
+                }
+                response = requests.post("https://text.pollinations.ai/", json=payload, timeout=30)
+                
+                if response.status_code == 200 and response.text.strip():
                     reply = response.text
                 else:
-                    reply = "Şu an sunucu yanıt vermedi, tekrar dener misin?"
+                    reply = "Efendim, ellerim biraz doluydu ama şimdi duydum seni! Tekrar yazar mısın?"
             except Exception as e:
-                reply = f"Bağlantı hatası: {e}"
+                reply = f"Ufak bir bağlantı molası verdik: {e}"
 
             full_reply = f"{reply}\n\n🌐 https://lorvantis-web.streamlit.app"
             st.write(full_reply)
