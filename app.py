@@ -18,12 +18,11 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
 
     with st.chat_message("assistant"):
         with st.spinner("Lorvantis düşünüyor..."):
-            # İnternet kopmalarına ve 402/500 tarzı sunucu patlamalarına son!
             cevaplar = [
                 f"Harika bir noktaya değindin kanka! '{prompt}' konusunda çalışmalarıma devam ediyorum.",
                 f"Bunu aklım bir yere not etti: '{prompt}'. Şimdilik bu şekilde yanıtlayabilirim.",
                 f"Anladım dostum, '{prompt}' dedin. Kodlarım bu isteğini işlemek için hazır.",
-                f"Fenomendin,fenomen kaldın kanka! '{prompt' diyerek yine konuyu 12'den vurdun."
+                f"Fenomendin, fenomen kaldın kanka! '{prompt}' diyerek yine konuyu 12'den vurdun."
             ]
             reply = random.choice(cevaplar)
 
