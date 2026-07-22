@@ -17,27 +17,27 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
 
     with st.chat_message("assistant"):
         with st.spinner("Lorvantis düşünüyor..."):
-            p = prompt.lower()
+            p = prompt.lower().strip()
             
-            # Akıllı yanıt motoru v2
-            if "nasılsın" in p or "ne var ne yok" in p:
-                reply = "Eyvallah kanka, bomba gibiyim! Sen nasılsın, nasıl gidiyor?"
-            elif "sa" in p or "selam" in p or "merhaba" in p:
+            # Sadece tam eşleşen veya net selamlaşmalarda aleykümselam desin
+            if p in ["sa", "selam", "selamün aleyküm", "selamin aleykum"]:
                 reply = "Aleykümselam kanka! Hoş geldin, ne yapıyoruz bugün?"
+            elif "nasılsın" in p or "ne var ne yok" in p:
+                reply = "Eyvallah kanka, bomba gibiyim! Sen nasılsın, nasıl gidiyor?"
             elif "adın" in p or "kimsin" in p:
                 reply = "Ben Lorvantis! Senin kodlayıp hayata geçirdiğin yapay zeka asistanınım."
             elif "windows 10" in p or "format" in p or "yükle" in p:
                 reply = """Windows 10 yüklemek için şu adımları takip edebilirsin kanka:
-1. **USB Bellek Hazırla:** En az 8 GB'lık bir boş USB bul.
-2. **Medya Oluşturma Aracı:** Microsoft'un resmi sitesinden "Windows 10 İndir" aracını indirip USB'ye yazdır.
-3. **Boot Et:** Bilgisayarı yeniden başlatıp BIOS tuşuna (genelde F12, F8 veya Del) basarak USB'yi ilk sıraya al.
-4. **Kurulum:** Ekrana gelen kurulum adımlarını takip et, diski seç ve yüklemeyi tamamla! Driver'ları da güncellemeyi unutma."""
+1. **USB Bellek Hazırla:** En az 8 GB'lık boş bir USB bul.
+2. **Medya Aracı:** Microsoft'un sitesinden Windows 10 indirme aracını indirip USB'ye yazdır.
+3. **Boot Et:** Bilgisayarı yeniden başlatıp BIOS tuşuna basarak USB'yi ilk sıraya al.
+4. **Kurulum:** İleri ileri diyerek kurulumu tamamla, ardından sürücüleri güncellemeyi unutma!"""
             elif "python" in p or "kod" in p:
-                reply = f"Python işleri bende kanka! '{prompt}' konusunda ne yapmak istiyorsun, kodu yazalım."
+                reply = f"Python işleri bende kanka! '{prompt}' konusunda ne yapmak istiyorsun, yaz bakalım."
             elif "fenerbahçe" in p or "fb" in p:
                 reply = "Renklerimizi unutmayız kanka! Sarı-Lacivert ensesindeyiz her şeyin."
             else:
-                reply = f"'{prompt}' dedin kanka, bunu kaydettim. Üzerinde çalışıyorum, başka ne sormak istersin?"
+                reply = f"Kanka '{prompt}' dedin, bunu detaylıca aldım. Başka ne merak ediyorsun, sor gelsin!"
 
             st.write(reply)
             st.session_state.messages.append({"role": "assistant", "content": reply})
