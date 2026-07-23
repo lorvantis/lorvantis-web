@@ -8,7 +8,7 @@ st.title("🤖 Lorvantis AI")
 st.caption("Türkiye’nin web yapay zekası")
 
 if "messages" not in st.session_state:
-    st.session_state["messages"] = [{"role": "assistant", "content": "Selam kanka! Model derdini de bitirdik, sahne bizim 😎 Dök içini 🔥"}]
+    st.session_state["messages"] = [{"role": "assistant", "content": "Merhaba. Lorvantis aktif. Futboldan uzaya, tarihten oyunlara kadar tüm web verileriyle buradayım. Ne öğrenmek istiyorsun?"}]
 
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
@@ -18,22 +18,25 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
     st.chat_message("user").write(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("Lorvantis düşünüyor..."):
+        with st.spinner("Lorvantis webde aratıyor ve düşünüyor..."):
             try:
-                api_url = "https://text.pollinations.ai/"
+                # Web araması yapabilmesi için URL'e search=true ekledik ve sağlam modeli belirledik
+                api_url = "https://text.pollinations.ai/?search=true"
                 
-                system_prompt = """Senin adın Lorvantis. Türkiye'nin yerli, samimi, kanka dilli yapay zekasısın. 
-                Asla robota bağlamazsın. Kullanıcı sana 'nasılsın' derse asla hata mesajı vermez, 'İyiyim kanka, sen nasılsın, ne kaynatıyoruz?' gibi samimi cevaplar verirsin. 
-                Gerektiğinde kısa ve net, gerektiğinde uzun ve detaylı, bol bol emoji kullanarak konuşursun. Dünyadaki her şeyi (kodlama, oyun, spor, teknoloji) çok iyi bilirsin. Asla 'bilmiyorum' demezsin."""
+                system_prompt = """Senin adın Lorvantis. Türkiye'nin web yapay zekasısın. 
+                Kullanıcıyla 'kanka' diliyle konuşursun ancak bilgide asla taviz vermezsin. 
+                Futbol tarihi, savaş tarihi, dünya şehirleri, ülkeler, uzay bilimi ve video oyunları dahil olmak üzere web üzerindeki tüm bilgilere hakimsin. 
+                Kullanıcı bir şey sorduğunda web genelinde arama yaparak en doğru, güncel ve detaylı bilgiyi verirsin. Asla 'bilmiyorum' demezsin."""
                 
                 messages_payload = [{"role": "system", "content": system_prompt}]
                 
                 for m in st.session_state.messages[-10:]:
                     messages_payload.append({"role": m["role"], "content": m["content"]})
                 
-                # Model parametresini sildik, API kendi varsayılanını kullansın 404 yemesin:
+                # 402 ve 404 yememek için en stabil çalışanopenai modelini kullanıyoruz
                 payload = json.dumps({
                     "messages": messages_payload,
+                    "model": "openai",
                     "jsonMode": False
                 }).encode('utf-8')
                 
@@ -50,9 +53,9 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                 with urllib.request.urlopen(req, timeout=30) as response:
                     reply = response.read().decode('utf-8').strip()
                     if not reply:
-                        reply = "Kanka sunucu boş döndü bi secdeye varıp geliyim, tekrar yaz 😄"
+                        reply = "Sunucu boş döndü kanka, bir daha yazar mısın?"
             except Exception as e:
-                reply = f"Olay mahalli karıştı kanka, API bi patlak verdi: {e} 💀 Ama sen dert etme, konuyu baştan alalım!"
+                reply = f"Hata yakalandı kanka: {e} 💀 İstek veya 402/404 takıldı, hemen tekrar deneyelim."
 
             st.write(reply)
             st.session_state.messages.append({"role": "assistant", "content": reply})
