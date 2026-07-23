@@ -65,8 +65,14 @@ if "uploader_key" not in st.session_state:
 def encode_image(image_bytes):
     return base64.b64encode(image_bytes).decode('utf-8')
 
-# --- YAN MENÜ ---
+# --- YAN MENÜ VE API AYARI ---
 with st.sidebar:
+    st.title("⚙️ Ayarlar & Sohbet")
+    
+    # Gemini API Anahtar Girişi
+    gemini_key = st.text_input("Gemini API Anahtarı:", type="password", help="Google AI Studio'dan ücretsiz alabilirsin kanka.")
+    
+    st.markdown("---")
     st.title("🗂️ Sohbetlerin")
     new_chat = st.text_input("Yeni Sohbet Başlığı:")
     if st.button("➕ Yeni Sohbet Aç"):
@@ -101,7 +107,7 @@ with st.sidebar:
 col_title, col_menu = st.columns([8, 1])
 with col_title:
     st.title("🤖 Lorvantis AI")
-    st.caption("Türkiye’nin Web YapayZekası")
+    st.caption("Türkiye’nin Web YapayZekası (Gemini Gücüyle)")
 with col_menu:
     st.markdown("<br>", unsafe_allow_html=True)
     with st.popover("⋮"):
@@ -152,81 +158,64 @@ if st.session_state.ready_image:
         unsafe_allow_html=True
     )
 
-# --- SOHBET BARI VE YANIT SİSTEMİ ---
-if prompt := st.chat_input("Lorvantis'ere yaz..."):
-    
-    user_display = prompt
-    img_b64_to_send = None
-    
-    if st.session_state.ready_image:
-        user_display = f"🖼️ [Görsel Eklendi] {prompt}"
-        img_b64_to_send = encode_image(st.session_state.ready_image)
-        st.session_state.ready_image = None 
+# --- SOHBET BARI VE REQUESTS TABANLI GEMINI SİSTEMİ ---
+if prompt := st.chat_input("Lorvantis'e yaz..."):
+    if not gemini_key:
+        st.error("Kanka çalışabilmem için sol menüden Gemini API anahtarını girmen gerekiyor!")
+    else:
+        user_display = prompt
+        img_b64 = None
         
-    st.session_state.chats[st.session_state.current_chat].append({"role": "user", "content": user_display})
-    st.chat_message("user").write(user_display)
+        if st.session_state.ready_image:
+            user_display = f"🖼️ [Görsel Eklendi] {prompt}"
+            img_b64 = encode_image(st.session_state.ready_image)
+            st.session_state.ready_image = None 
+            
+        st.session_state.chats[st.session_state.current_chat].append({"role": "user", "content": user_display})
+        st.chat_message("user").write(user_display)
 
-    with st.chat_message("assistant"):
-        # Kullanıcıya beklemesi gerektiğini kibarca belirten şık bir durum çubuğu
-        with st.status("Lorvantis derinlemesine düşünüyor ve web'i tarıyor (Bu işlem biraz sürebilir)...", expanded=True) as status:
-            reply = ""
-            success = False
-            
-            # --- 1. AKILLI YEREL SELAMLAŞMA VE TEŞEKKÜR KONTROLÜ ---
-            clean_prompt = prompt.lower().strip(".,!?")
-            greetings = ["selam", "slm", "merhaba", "mrb", "selamın aleyküm", "selamun aleyküm", "sa", "aleykümselam"]
-            thanks = ["tşk", "teşekkürler", "teşekkür ederim", "sağol", "sagol", "teşekkür", "eyvallah"]
-            
-            if not img_b64_to_send:
-                if clean_prompt in greetings:
-                    reply = "Aleykümselam kanka, hoş geldin! Nasılsın, ne var ne yok, nasıl yardımcı olabilirim?"
-                    success = True
-                elif clean_prompt in thanks:
-                    reply = "Rica ederim kanka, ne demek! Başka bir sorun varsa buradayım."
-                    success = True
-            
-            # --- 2. SABIRLI VE UZUN SÜRELİ API BAĞLANTISI ---
-            if not success:
-                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+        with st.chat_message("assistant"):
+            with st.status("Lorvantis düşünüyor...", expanded=True) as status:
+                reply = ""
                 try:
-                    if img_b64_to_send:
-                        payload = {
-                            "messages": [
-                                {"role": "system", "content": "Sen Lorvantis'sin. Türkiye’nin web yapay zekasısın. Kullanıcıya 'kanka' de. Bu görseli ve soruyu analiz edip en doğru ve detaylı cevabı ver."},
-                                {"role": "user", "content": [
-                                    {"type": "text", "text": prompt},
-                                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64_to_send}"}}
-                                ]}
-                            ],
-                            "model": "qwen"
-                        }
-                    else:
-                        payload = {
-                            "messages": [
-                                {"role": "system", "content": "Sen Lorvantis'sin. Türkiye’nin web yapay zekasısın. Kullanıcıya 'kanka' de ve soruya detaylı, akıcı, web destekli doğru cevap ver."},
-                                {"role": "user", "content": prompt}
-                            ],
-                            "model": "qwen"
-                        }
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
                     
-                    # Süre aşımı 90 saniyeye çıkarıldı: Model yanıt verene kadar asla pes etmez!
-                    res = requests.post("https://text.pollinations.ai/", json=payload, headers=headers, timeout=90)
+                    parts = [{"text": prompt}]
+                    if img_b64:
+                        parts.append({
+                            "inline_data": {
+                                "mime_type": "image/jpeg",
+                                "data": img_b64
+                            }
+                        })
+
+                    payload = {
+                        "system_instruction": {
+                            "parts": [{"text": "Sen Lorvantis'sin. Türkiye’nin web yapay zekasısın. Kullanıcıya kesinlikle 'kanka' diye hitap et. Sorulara son derece detaylı, akıcı, net ve doğru cevaplar ver."}]
+                        },
+                        "contents": [
+                            {
+                                "role": "user",
+                                "parts": parts
+                            }
+                        ]
+                    }
+
+                    headers = {'Content-Type': 'application/json'}
+                    res = requests.post(url, headers=headers, data=json.dumps(payload), timeout=30)
                     
                     if res.status_code == 200:
-                        result = res.text.strip()
-                        if result and len(result) > 2:
-                            reply = result
-                            success = True
+                        data = res.json()
+                        reply = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                    else:
+                        reply = f"Kanka API hatası ({res.status_code}): Anahtarı doğru girdiğinden emin ol."
                 except Exception as e:
-                    reply = f"Kanka bağlantı sırasında bir hata oluştu: {str(e)}"
-            
-            if not success and not reply:
-                reply = f"Kanka dış sunucu şu an çok yoğun olduğu için yanıt veremedi. Birkaç saniye sonra tekrar dener misin?"
-            
-            status.update(label="Lorvantis çözdü!", state="complete", expanded=False)
+                    reply = f"Kanka bir hata oluştu: {str(e)}"
+                
+                status.update(label="Lorvantis çözdü!", state="complete", expanded=False)
 
-        st.write(reply)
-        st.session_state.chats[st.session_state.current_chat].append({"role": "assistant", "content": reply})
+            st.write(reply)
+            st.session_state.chats[st.session_state.current_chat].append({"role": "assistant", "content": reply})
 
 # --- OTOMATİK EN AŞAĞI KAYDIRMA ---
 components.html(
