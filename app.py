@@ -178,7 +178,6 @@ if prompt := st.chat_input("Lorvantis'e yaz..."):
             greetings = ["selam", "slm", "merhaba", "mrb", "selamın aleyküm", "selamun aleyküm", "sa"]
             thanks = ["tşk", "teşekkürler", "teşekkür ederim", "sağol", "sagol", "teşekkür"]
             
-            # Eğer resim yoksa ve mesaj basit bir selamsa, webde arama yapma
             if not img_b64_to_send:
                 if lower_prompt in greetings:
                     reply = "Aleykümselam kanka, hoş geldin! Nasılsın, ne var ne yok, nasıl yardımcı olabilirim?"
@@ -187,11 +186,11 @@ if prompt := st.chat_input("Lorvantis'e yaz..."):
                     reply = "Rica ederim kanka, ne demek! Başka bir sorun varsa buradayım."
                     success = True
             
-            # --- 2. ASLA PES ETMEYEN WEB ARAMA DÖNGÜSÜ ---
+            # --- 2. HIZLI VE SESSİZ WEB ARAMA DÖNGÜSÜ ---
             if not success:
-                attempt = 1
                 while not success:
-                    status.update(label=f"Lorvantis web'i tarıyor... (Deneme {attempt}) Sunucu bekleniyor...", state="running")
+                    # Artık kaçıncı deneme olduğu yazmıyor, sadece aradığı belli oluyor
+                    status.update(label="Lorvantis web'in derinliklerinde cevabı arıyor, lütfen bekle...", state="running")
                     try:
                         system_msg = "Sen Lorvantis'sin. Kullanıcıya 'kanka' de. İnterneti tarayarak en doğru ve uzun cevabı ver."
                         messages = [{"role": "system", "content": system_msg}]
@@ -212,21 +211,22 @@ if prompt := st.chat_input("Lorvantis'e yaz..."):
                             "search": True
                         }
                         
+                        # Timeout 20'den 8'e düşürüldü, böylece takılırsa hızlıca kopup baştan deneyecek
                         req = urllib.request.Request(
                             "https://text.pollinations.ai/",
                             data=json.dumps(payload).encode('utf-8'),
                             headers={'Content-Type': 'application/json'}
                         )
                         
-                        with urllib.request.urlopen(req, timeout=20) as response:
+                        with urllib.request.urlopen(req, timeout=8) as response:
                             if response.getcode() == 200:
                                 result = response.read().decode('utf-8').strip()
                                 if len(result) > 5:
                                     reply = result
                                     success = True
                     except Exception as e:
-                        attempt += 1
-                        time.sleep(2) # 2 saniye bekle ve tekrar saldır
+                        # Bekleme süresi 2 saniyeden 1 saniyeye düşürüldü
+                        time.sleep(1)
                 
             status.update(label="Lorvantis çözdü!", state="complete", expanded=False)
 
