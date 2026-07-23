@@ -6,7 +6,6 @@ import time
 
 st.set_page_config(page_title="Lorvantis AI", page_icon="🤖")
 
-# Üst kısma şık bir uygulama yükleme banner'ı/butonu ekleyelim
 col1, col2 = st.columns([3, 1])
 with col1:
     st.title("🤖 Lorvantis AI")
@@ -14,8 +13,11 @@ with col1:
 
 with col2:
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("📱 Nasıl Yüklenir?"):
-        st.info("Kanka telefonunda tarayıcının sağ üstündeki **üç noktaya** (veya iPhone'da paylaş butonuna) basıp **'Ana Ekrana Ekle'** diyerek Lorvantis'i direkt telefonuna uygulama olarak kurabilirsin! 🚀")
+    if st.button("📱 Nasıl İndirilir?"):
+        st.info(
+            "**Android (Chrome):** Sağ üstteki üç noktaya basıp **'Ana Ekrana Ekle'** veya **'Uygulamayı Yükle'** de.\n\n"
+            "**iPhone (Safari):** Alttaki Paylaş butonuna basıp yukarı kaydırarak **'Ana Ekrana Ekle'** seçeneğini seç! 🚀"
+        )
 
 if "messages" not in st.session_state:
     st.session_state["messages"] = [{"role": "assistant", "content": "Selam kanka ne aramıştın?"}]
@@ -49,7 +51,7 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                 reply = "Bir şey değil kanka!"
                 handled_locally = True
 
-            # 2. Eskisi gibi o canavar gibi çalışan, %80+ başarı oranı veren GET arama motoru
+            # 2. Hızlı ve kararlı web arama motoru
             if not handled_locally:
                 success = False
                 attempt = 0
@@ -83,7 +85,7 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                         time.sleep(0.4)
                         continue
                 
-                # Eğer web anlık takılırsa, seni asla "tekrar yaz" diye bırakmayan, tüm soruları doğrudan şak diye açan dev akıllı yedek havuzu
+                # Akıllı yedek havuzu
                 if not success:
                     if "bitlis" in lower_prompt:
                         reply = "Bitlis'in plakası **13** kanka! Tarihi evleri, minareleri ve Nemrut Krater Gölü ile Doğu Anadolu'nun inci şehirlerindendir 🏔️"
