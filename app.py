@@ -5,35 +5,30 @@ import json
 import time
 import base64
 import streamlit.components.v1 as components
+from PIL import Image
+import io
 
 # Sayfa ayarları
 st.set_page_config(page_title="Lorvantis AI", page_icon="🤖", layout="centered")
 
-# --- CSS İLE MESAJ BARINA BUTON GÖMME HİLESİ ---
+# --- CSS: MESAJ BARI DÜZENLEMELERİ ---
 st.markdown("""
     <style>
-        /* Mesaj barının sol tarafında buton için boşluk bırak */
         [data-testid="stChatInput"] {
             padding-left: 3rem !important;
         }
-        
-        /* + Butonunu zorla mesaj barının sol içine sabitle */
         div[data-testid="stPopover"] {
             position: fixed;
             bottom: 2rem;
             left: 1.5rem;
             z-index: 99999;
         }
-        
-        /* Mobilde ekran daraldığında hizalamayı bozmaması için */
         @media (max-width: 768px) {
             div[data-testid="stPopover"] {
                 bottom: 1.5rem;
                 left: 1rem;
             }
         }
-        
-        /* Butonun kendi tasarımını ufaltıp şıklaştırma */
         div[data-testid="stPopover"] button {
             border-radius: 50%;
             padding: 0.5rem;
@@ -44,24 +39,38 @@ st.markdown("""
             align-items: center;
             justify-content: center;
         }
+        /* Minik resim önizlemesi tasarımı */
+        .img-thumbnail {
+            position: fixed;
+            bottom: 5rem;
+            left: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            border: 2px solid #4CAF50;
+            object-fit: cover;
+            z-index: 99998;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
     </style>
 """, unsafe_allow_html=True)
 
-# --- VERİTABANI VE HAFIZA (SESSION STATE) ---
+# --- VERİTABANI VE HAFIZA ---
 if "chats" not in st.session_state:
     st.session_state.chats = {"Varsayılan Sohbet": [{"role": "assistant", "content": "Selam kanka! Ne arıyoruz, ne soruyorsun?"}]}
 if "current_chat" not in st.session_state:
     st.session_state.current_chat = "Varsayılan Sohbet"
+if "temp_image" not in st.session_state:
+    st.session_state.temp_image = None
+if "ready_image" not in st.session_state:
+    st.session_state.ready_image = None
 
-# --- YARDIMCI FONKSİYON: RESMİ BASE64'E ÇEVİRME ---
-def encode_image(image_file):
-    return base64.b64encode(image_file.getvalue()).decode('utf-8')
+def encode_image(image_bytes):
+    return base64.b64encode(image_bytes).decode('utf-8')
 
-# --- YAN MENÜ (SOHBET GEÇMİŞİ VE SİLME) ---
+# --- YAN MENÜ ---
 with st.sidebar:
     st.title("🗂️ Sohbetlerin")
-    
-    # Yeni sohbet ekleme
     new_chat = st.text_input("Yeni Sohbet Başlığı:")
     if st.button("➕ Yeni Sohbet Aç"):
         if new_chat and new_chat not in st.session_state.chats:
@@ -70,8 +79,6 @@ with st.sidebar:
             st.rerun()
             
     st.markdown("---")
-    
-    # Sohbetleri listeleme ve X ile silme
     chats_to_delete = []
     for chat_name in list(st.session_state.chats.keys()):
         col1, col2 = st.columns([4, 1])
@@ -83,7 +90,6 @@ with st.sidebar:
             if st.button("❌", key=f"del_{chat_name}"):
                 chats_to_delete.append(chat_name)
                 
-    # Silme işlemini uygula
     for chat_name in chats_to_delete:
         del st.session_state.chats[chat_name]
         if st.session_state.current_chat == chat_name:
@@ -110,92 +116,119 @@ with col_menu:
 for msg in st.session_state.chats[st.session_state.current_chat]:
     st.chat_message(msg["role"]).write(msg["content"])
 
-# --- ALT KISIM: ➕ BUTONU (FOTOĞRAF/KAMERA) ---
-img_base64 = None
-
-# CSS ile yerini ayarladığımız Popover butonu (Artık solda barın üstünde görünecek)
+# --- FOTOĞRAF YÜKLEME VE ONAY PENCERESİ (MODAL SİMÜLASYONU) ---
 with st.popover("➕"):
-    tab1, tab2 = st.tabs(["🖼️ Galeriden Yükle", "📸 Kamera ile Çek"])
+    tab1, tab2 = st.tabs(["🖼️ Galeriden", "📸 Kamera"])
     with tab1:
-        uploaded_file = st.file_uploader("Bir fotoğraf seç kanka", type=["png", "jpg", "jpeg"])
+        uploaded_file = st.file_uploader("Seç", type=["png", "jpg", "jpeg"])
+        if uploaded_file:
+            st.session_state.temp_image = uploaded_file.getvalue()
     with tab2:
-        camera_file = st.camera_input("Buradan fotoğraf çekebilirsin")
+        camera_file = st.camera_input("Çek")
+        if camera_file:
+            st.session_state.temp_image = camera_file.getvalue()
+
+# Eğer resim çekildiyse/yüklendiyse özel onay ekranı göster
+if st.session_state.temp_image:
+    st.markdown("---")
+    st.info("📷 Görsel alındı! Ne yapmak istersin?")
+    st.image(st.session_state.temp_image, width=200)
     
-    if uploaded_file:
-        img_base64 = encode_image(uploaded_file)
-        st.success("Fotoğraf yüklendi! Şimdi aşağıdan sorunu sorabilirsin.")
-    elif camera_file:
-        img_base64 = encode_image(camera_file)
-        st.success("Fotoğraf çekildi! Şimdi aşağıdan sorunu sorabilirsin.")
+    col_iptal, col_yolla = st.columns(2)
+    with col_iptal:
+        if st.button("❌ İptal Et", use_container_width=True):
+            st.session_state.temp_image = None
+            st.rerun()
+    with col_yolla:
+        if st.button("✅ Mesajla Yolla", use_container_width=True):
+            st.session_state.ready_image = st.session_state.temp_image
+            st.session_state.temp_image = None
+            st.rerun()
+
+# Eğer resim onaylandıysa mesaj barının üstünde küçük thumbnail göster
+if st.session_state.ready_image:
+    b64_img = encode_image(st.session_state.ready_image)
+    st.markdown(
+        f'<img src="data:image/jpeg;base64,{b64_img}" class="img-thumbnail">', 
+        unsafe_allow_html=True
+    )
 
 # --- SOHBET BARI VE YANIT SİSTEMİ ---
-if prompt := st.chat_input("Lorvantis'e bir soru sor veya görsel hakkında bir şey yaz..."):
-    # Mesajı ekrana bas
+if prompt := st.chat_input("Lorvantis'e yaz..."):
+    
+    # Kullanıcı mesajını hazırla
     user_display = prompt
-    if img_base64:
+    img_b64_to_send = None
+    
+    if st.session_state.ready_image:
         user_display = f"🖼️ [Görsel Eklendi] {prompt}"
+        img_b64_to_send = encode_image(st.session_state.ready_image)
+        st.session_state.ready_image = None # Gönderdikten sonra temizle
         
     st.session_state.chats[st.session_state.current_chat].append({"role": "user", "content": user_display})
     st.chat_message("user").write(user_display)
 
-    # Yapay zeka yanıt kısmı
+    # Yapay zeka API kısmı
     with st.chat_message("assistant"):
-        with st.status("Lorvantis web'in altını üstüne getiriyor...", expanded=True) as status:
+        with st.status("Lorvantis web'i tarıyor...", expanded=True) as status:
             reply = ""
             success = False
-            attempt = 0
             
-            while not success and attempt < 3:
-                attempt += 1
-                status.update(label=f"Lorvantis derin analizde... (Aşama: {attempt})", state="running")
-                
+            # API 1. DENEME: Çoklu Model (Resim varsa POST at)
+            if img_b64_to_send:
                 try:
-                    system_prompt = "Sen Lorvantis'sin. Türkiye'nin en akıllı web yapay zekasısın. Kullanıcıya 'kanka' diye hitap et, samimi ol. Asla 'bilmiyorum' deme, webde arama yapıp en güncel ve en doğru bilgiyi uzun uzun, detaylıca açıkla."
-                    
+                    status.update(label="Görsel ve soru analiz ediliyor...", state="running")
                     messages = [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": prompt}
+                        {"role": "system", "content": "Sen Lorvantis'sin. Kullanıcıya 'kanka' de. Bu görseli ve soruyu analiz edip en doğru, uzun ve güncel web bilgisini ver."},
+                        {"role": "user", "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64_to_send}"}}
+                        ]}
                     ]
                     
-                    if img_base64:
-                        messages[1]["content"] = [
-                            {"type": "text", "text": prompt},
-                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_base64}"}}
-                        ]
-                    
-                    payload = {
-                        "messages": messages,
-                        "model": "searchgpt", 
-                        "search": True
-                    }
-                    
-                    data = json.dumps(payload).encode('utf-8')
+                    payload = {"messages": messages, "model": "searchgpt", "search": True}
                     req = urllib.request.Request(
                         "https://text.pollinations.ai/",
-                        data=data,
-                        headers={'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'}
+                        data=json.dumps(payload).encode('utf-8'),
+                        headers={'Content-Type': 'application/json'}
                     )
-                    
-                    with urllib.request.urlopen(req, timeout=20) as response:
+                    with urllib.request.urlopen(req, timeout=15) as response:
                         if response.getcode() == 200:
                             result = response.read().decode('utf-8').strip()
-                            if result and len(result) > 5:
+                            if len(result) > 10:
                                 reply = result
                                 success = True
-                                break
-                except Exception as e:
-                    time.sleep(1)
-                    continue
-            
+                except Exception:
+                    pass # Hata alırsak diğer yönteme (sadece metin) geçecek
+
+            # API 2. DENEME: Sağlam GET İsteği (Sadece Text / Resim başarısız olursa)
             if not success:
-                reply = "Kanka şu an internet hatlarında devasa bir yoğunluk var, sunucular cevap vermekte zorlanıyor. Bu soruyu birazdan tekrar fırlatır mısın bana? 🚀"
+                status.update(label="Soru webde aranıyor...", state="running")
+                try:
+                    prefix = "Sen Lorvantis'sin. Kanka diliyle, webden en güncel ve uzun cevabı ver. Soru: "
+                    safe_prompt = urllib.parse.quote(prefix + prompt)
+                    url = f"https://text.pollinations.ai/{safe_prompt}?search=true"
+                    
+                    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                    with urllib.request.urlopen(req, timeout=15) as response:
+                        if response.getcode() == 200:
+                            result = response.read().decode('utf-8').strip()
+                            if len(result) > 10:
+                                reply = result
+                                success = True
+                except Exception:
+                    pass
+
+            # HİÇBİRİ ÇALIŞMAZSA (Kesin Çözüm / Çökme Önleyici)
+            if not success:
+                reply = "Kanka şu an internette veya görsel sunucularında devasa bir anlık kopukluk var. Bağlantıyı yeniliyorum, aynı soruyu yazısız veya sadece yazıyla bir saniye sonra tekrar patlatır mısın? 🚀"
                 
             status.update(label="Lorvantis çözdü!", state="complete", expanded=False)
 
         st.write(reply)
         st.session_state.chats[st.session_state.current_chat].append({"role": "assistant", "content": reply})
 
-# --- OTOMATİK EN AŞAĞI KAYDIRMA SİSTEMİ (JS) ---
+# --- OTOMATİK EN AŞAĞI KAYDIRMA (JS) ---
 components.html(
     """
     <script>
