@@ -2,6 +2,7 @@ import streamlit as st
 import urllib.request
 import urllib.parse
 import urllib.error
+import time
 
 st.set_page_config(page_title="Lorvantis AI", page_icon="🤖")
 
@@ -15,7 +16,6 @@ for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
 
 if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
-    # Kullanıcı kısa "sa", "slm", "he" falan yazarsa API patlamasın diye arka planda genişletiyoruz:
     cleaned_prompt = prompt.strip()
     if cleaned_prompt.lower() in ["sa", "selam", "slm"]:
         full_user_input = "Selamün aleyküm kanka, nasılsın?"
@@ -42,9 +42,12 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                 full_query = system_prefix + full_user_input
                 encoded_query = urllib.parse.quote(full_query)
                 
+                # Her istekte sunucunun aynı cevabı tekrarlamaması için rastgele cache kırıcı ekledik:
+                cache_buster = int(time.time() * 1000)
+                
                 api_urls = [
-                    f"https://text.pollinations.ai/{encoded_query}?search=true",
-                    f"https://text.pollinations.ai/{encoded_query}"
+                    f"https://text.pollinations.ai/{encoded_query}?search=true&t={cache_buster}",
+                    f"https://text.pollinations.ai/{encoded_query}?t={cache_buster}"
                 ]
                 
                 success = False
