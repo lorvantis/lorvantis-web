@@ -153,7 +153,7 @@ if st.session_state.ready_image:
     )
 
 # --- SOHBET BARI VE YANIT SİSTEMİ ---
-if prompt := st.chat_input("Lorvantis'e yaz..."):
+if prompt := st.chat_input("Lorvantis'ere yaz..."):
     
     user_display = prompt
     img_b64_to_send = None
@@ -167,7 +167,8 @@ if prompt := st.chat_input("Lorvantis'e yaz..."):
     st.chat_message("user").write(user_display)
 
     with st.chat_message("assistant"):
-        with st.status("Lorvantis yanıtı hazırlıyor...", expanded=True) as status:
+        # Kullanıcıya beklemesi gerektiğini kibarca belirten şık bir durum çubuğu
+        with st.status("Lorvantis derinlemesine düşünüyor ve web'i tarıyor (Bu işlem biraz sürebilir)...", expanded=True) as status:
             reply = ""
             success = False
             
@@ -184,7 +185,7 @@ if prompt := st.chat_input("Lorvantis'e yaz..."):
                     reply = "Rica ederim kanka, ne demek! Başka bir sorun varsa buradayım."
                     success = True
             
-            # --- 2. HIZLI VE HAFİF QWEN MODEL BAĞLANTISI ---
+            # --- 2. SABIRLI VE UZUN SÜRELİ API BAĞLANTISI ---
             if not success:
                 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
                 try:
@@ -202,26 +203,25 @@ if prompt := st.chat_input("Lorvantis'e yaz..."):
                     else:
                         payload = {
                             "messages": [
-                                {"role": "system", "content": "Sen Lorvantis'sin. Türkiye’nin web yapay zekasısın. Kullanıcıya 'kanka' de ve soruya detaylı, akıcı, web destekli cevap ver."},
+                                {"role": "system", "content": "Sen Lorvantis'sin. Türkiye’nin web yapay zekasısın. Kullanıcıya 'kanka' de ve soruya detaylı, akıcı, web destekli doğru cevap ver."},
                                 {"role": "user", "content": prompt}
                             ],
                             "model": "qwen"
                         }
                     
-                    # Süre aşımı 6 saniyeye indirildi, takılma yapmadan anında yedek plana geçer
-                    res = requests.post("https://text.pollinations.ai/", json=payload, headers=headers, timeout=6)
+                    # Süre aşımı 90 saniyeye çıkarıldı: Model yanıt verene kadar asla pes etmez!
+                    res = requests.post("https://text.pollinations.ai/", json=payload, headers=headers, timeout=90)
                     
                     if res.status_code == 200:
                         result = res.text.strip()
                         if result and len(result) > 2:
                             reply = result
                             success = True
-                except Exception:
-                    pass
+                except Exception as e:
+                    reply = f"Kanka bağlantı sırasında bir hata oluştu: {str(e)}"
             
-            # --- 3. AKILLI ANINDA YEDEK YANIT (ASLA BELETMEZ) ---
-            if not success:
-                reply = f"Kanka şu an dış sunucularda anlık bir yoğunluk var ama sistem aktif! '{prompt}' konusuna odaklandım, birkaç saniye sonra tekrar gönderdiğinde anında akacaktır. 🚀"
+            if not success and not reply:
+                reply = f"Kanka dış sunucu şu an çok yoğun olduğu için yanıt veremedi. Birkaç saniye sonra tekrar dener misin?"
             
             status.update(label="Lorvantis çözdü!", state="complete", expanded=False)
 
