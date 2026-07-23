@@ -8,7 +8,7 @@ st.title("🤖 Lorvantis AI")
 st.caption("Türkiye'nin akıllı web yapay zekası")
 
 if "messages" not in st.session_state:
-    st.session_state["messages"] = [{"role": "assistant", "content": "Selam kanka! Ben Lorvantis 😎 Ne var ne yok, dal içeri 🔥"}]
+    st.session_state["messages"] = [{"role": "assistant", "content": "Selam kanka! Kaldığımız yerden devam ediyoruz 😎 Ne var ne yok, dök içini 🔥"}]
 
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
@@ -22,7 +22,6 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
             try:
                 api_url = "https://text.pollinations.ai/"
                 
-                # Karakteri ve tarzı tam oturtan sistem promptu
                 system_prompt = """Senin adın Lorvantis. Türkiye'nin yerli, samimi, kanka dilli yapay zekasısın. 
                 Asla robota bağlamazsın. Kullanıcı sana 'nasılsın' derse asla hata mesajı vermez, 'İyiyim kanka, sen nasılsın, ne kaynatıyoruz?' gibi samimi cevaplar verirsin. 
                 Gerektiğinde kısa ve net, gerektiğinde uzun ve detaylı, bol bol emoji kullanarak konuşursun. Dünyadaki her şeyi (kodlama, oyun, spor, teknoloji) çok iyi bilirsin. Asla 'bilmiyorum' demezsin."""
@@ -32,9 +31,10 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                 for m in st.session_state.messages[-10:]:
                     messages_payload.append({"role": m["role"], "content": m["content"]})
                 
+                # Para istemeyen mistral modeliyle tam payload burası kanka:
                 payload = json.dumps({
                     "messages": messages_payload,
-                    "model": "openai",
+                    "model": "mistral",
                     "jsonMode": False
                 }).encode('utf-8')
                 
@@ -53,7 +53,6 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                     if not reply:
                         reply = "Kanka sunucu boş döndü bi secdeye varıp geliyim, tekrar yaz 😄"
             except Exception as e:
-                # Artık hata verirse gizlemiyoruz, direkt hatayı kanka diliyle ekrana basıyoruz ki ne kopuyor bilelim
                 reply = f"Olay mahalli karıştı kanka, API bi patlak verdi: {e} 💀 Ama sen dert etme, konuyu baştan alalım!"
 
             st.write(reply)
