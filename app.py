@@ -5,8 +5,6 @@ import json
 import time
 import base64
 import streamlit.components.v1 as components
-from PIL import Image
-import io
 
 # Sayfa ayarları
 st.set_page_config(page_title="Lorvantis AI", page_icon="🤖", layout="centered")
@@ -39,7 +37,6 @@ st.markdown("""
             align-items: center;
             justify-content: center;
         }
-        /* Minik resim önizlemesi tasarımı */
         .img-thumbnail {
             position: fixed;
             bottom: 5rem;
@@ -64,6 +61,9 @@ if "temp_image" not in st.session_state:
     st.session_state.temp_image = None
 if "ready_image" not in st.session_state:
     st.session_state.ready_image = None
+# Yükleyiciyi sıfırlamak için gereken anahtar (İptal sorununun çözümü)
+if "uploader_key" not in st.session_state:
+    st.session_state.uploader_key = 1
 
 def encode_image(image_bytes):
     return base64.b64encode(image_bytes).decode('utf-8')
@@ -116,19 +116,20 @@ with col_menu:
 for msg in st.session_state.chats[st.session_state.current_chat]:
     st.chat_message(msg["role"]).write(msg["content"])
 
-# --- FOTOĞRAF YÜKLEME VE ONAY PENCERESİ (MODAL SİMÜLASYONU) ---
+# --- FOTOĞRAF YÜKLEME ---
 with st.popover("➕"):
     tab1, tab2 = st.tabs(["🖼️ Galeriden", "📸 Kamera"])
     with tab1:
-        uploaded_file = st.file_uploader("Seç", type=["png", "jpg", "jpeg"])
+        # Key ekleyerek uploader'ı sıfırlanabilir hale getirdik
+        uploaded_file = st.file_uploader("Seç", type=["png", "jpg", "jpeg"], key=f"up_{st.session_state.uploader_key}")
         if uploaded_file:
             st.session_state.temp_image = uploaded_file.getvalue()
     with tab2:
-        camera_file = st.camera_input("Çek")
+        camera_file = st.camera_input("Çek", key=f"cam_{st.session_state.uploader_key}")
         if camera_file:
             st.session_state.temp_image = camera_file.getvalue()
 
-# Eğer resim çekildiyse/yüklendiyse özel onay ekranı göster
+# ONAY PENCERESİ
 if st.session_state.temp_image:
     st.markdown("---")
     st.info("📷 Görsel alındı! Ne yapmak istersin?")
@@ -138,14 +139,16 @@ if st.session_state.temp_image:
     with col_iptal:
         if st.button("❌ İptal Et", use_container_width=True):
             st.session_state.temp_image = None
+            st.session_state.uploader_key += 1 # Anahtarı değiştirerek eski resmi çöpe atıyoruz
             st.rerun()
     with col_yolla:
         if st.button("✅ Mesajla Yolla", use_container_width=True):
             st.session_state.ready_image = st.session_state.temp_image
             st.session_state.temp_image = None
+            st.session_state.uploader_key += 1
             st.rerun()
 
-# Eğer resim onaylandıysa mesaj barının üstünde küçük thumbnail göster
+# KÜÇÜK RESİM (THUMBNAIL)
 if st.session_state.ready_image:
     b64_img = encode_image(st.session_state.ready_image)
     st.markdown(
@@ -156,79 +159,71 @@ if st.session_state.ready_image:
 # --- SOHBET BARI VE YANIT SİSTEMİ ---
 if prompt := st.chat_input("Lorvantis'e yaz..."):
     
-    # Kullanıcı mesajını hazırla
     user_display = prompt
     img_b64_to_send = None
     
     if st.session_state.ready_image:
         user_display = f"🖼️ [Görsel Eklendi] {prompt}"
         img_b64_to_send = encode_image(st.session_state.ready_image)
-        st.session_state.ready_image = None # Gönderdikten sonra temizle
+        st.session_state.ready_image = None 
         
     st.session_state.chats[st.session_state.current_chat].append({"role": "user", "content": user_display})
     st.chat_message("user").write(user_display)
 
-    # Yapay zeka API kısmı
     with st.chat_message("assistant"):
         with st.status("Lorvantis web'i tarıyor...", expanded=True) as status:
             reply = ""
             success = False
             
-            # API 1. DENEME: Çoklu Model (Resim varsa POST at)
-            if img_b64_to_send:
-                try:
-                    status.update(label="Görsel ve soru analiz ediliyor...", state="running")
-                    messages = [
-                        {"role": "system", "content": "Sen Lorvantis'sin. Kullanıcıya 'kanka' de. Bu görseli ve soruyu analiz edip en doğru, uzun ve güncel web bilgisini ver."},
-                        {"role": "user", "content": [
+            # API ÇÖKME ÖNLEYİCİ: Her şeyi tek ve stabil POST yöntemiyle gönderiyoruz
+            try:
+                system_msg = "Sen Lorvantis'sin. Kullanıcıya 'kanka' de. İnterneti tarayarak en doğru ve uzun cevabı ver."
+                
+                messages = [
+                    {"role": "system", "content": system_msg}
+                ]
+                
+                # Resim varsa resimli format, yoksa düz metin formatı
+                if img_b64_to_send:
+                    messages.append({
+                        "role": "user", "content": [
                             {"type": "text", "text": prompt},
                             {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64_to_send}"}}
-                        ]}
-                    ]
-                    
-                    payload = {"messages": messages, "model": "searchgpt", "search": True}
-                    req = urllib.request.Request(
-                        "https://text.pollinations.ai/",
-                        data=json.dumps(payload).encode('utf-8'),
-                        headers={'Content-Type': 'application/json'}
-                    )
-                    with urllib.request.urlopen(req, timeout=15) as response:
-                        if response.getcode() == 200:
-                            result = response.read().decode('utf-8').strip()
-                            if len(result) > 10:
-                                reply = result
-                                success = True
-                except Exception:
-                    pass # Hata alırsak diğer yönteme (sadece metin) geçecek
+                        ]
+                    })
+                else:
+                    messages.append({"role": "user", "content": prompt})
+                
+                payload = {
+                    "messages": messages,
+                    "model": "searchgpt", # İnternet taraması için özel model
+                    "search": True
+                }
+                
+                req = urllib.request.Request(
+                    "https://text.pollinations.ai/",
+                    data=json.dumps(payload).encode('utf-8'),
+                    headers={'Content-Type': 'application/json'}
+                )
+                
+                with urllib.request.urlopen(req, timeout=20) as response:
+                    if response.getcode() == 200:
+                        result = response.read().decode('utf-8').strip()
+                        if len(result) > 5:
+                            reply = result
+                            success = True
+            except Exception as e:
+                pass
 
-            # API 2. DENEME: Sağlam GET İsteği (Sadece Text / Resim başarısız olursa)
             if not success:
-                status.update(label="Soru webde aranıyor...", state="running")
-                try:
-                    prefix = "Sen Lorvantis'sin. Kanka diliyle, webden en güncel ve uzun cevabı ver. Soru: "
-                    safe_prompt = urllib.parse.quote(prefix + prompt)
-                    url = f"https://text.pollinations.ai/{safe_prompt}?search=true"
-                    
-                    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-                    with urllib.request.urlopen(req, timeout=15) as response:
-                        if response.getcode() == 200:
-                            result = response.read().decode('utf-8').strip()
-                            if len(result) > 10:
-                                reply = result
-                                success = True
-                except Exception:
-                    pass
-
-            # HİÇBİRİ ÇALIŞMAZSA (Kesin Çözüm / Çökme Önleyici)
-            if not success:
-                reply = "Kanka şu an internette veya görsel sunucularında devasa bir anlık kopukluk var. Bağlantıyı yeniliyorum, aynı soruyu yazısız veya sadece yazıyla bir saniye sonra tekrar patlatır mısın? 🚀"
+                reply = "Kanka şu an sunucular o kadar yoğun ki sistem ufak bir nefes darlığı yaşadı. Sorunu hiçbir şey değiştirmeden tekrar gönder, bu sefer yakalayacağım! 🚀"
                 
             status.update(label="Lorvantis çözdü!", state="complete", expanded=False)
 
         st.write(reply)
         st.session_state.chats[st.session_state.current_chat].append({"role": "assistant", "content": reply})
 
-# --- OTOMATİK EN AŞAĞI KAYDIRMA (JS) ---
+# --- OTOMATİK EN AŞAĞI KAYDIRMA ---
 components.html(
     """
     <script>
