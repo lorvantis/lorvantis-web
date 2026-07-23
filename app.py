@@ -9,7 +9,7 @@ st.title("🤖 Lorvantis AI")
 st.caption("Türkiye’nin web destekli akıllı yapay zekası")
 
 if "messages" not in st.session_state:
-    st.session_state["messages"] = [{"role": "assistant", "content": "Selam kanka! Selamlaşmaları yerelleştirdik, şehirleri, ülkeleri ve güncel futbolu ise tam kapasite açtık. Ne soruyorsun?"}]
+    st.session_state["messages"] = [{"role": "assistant", "content": "Selam kanka! Modül hatasını tarihe gömdük. Sıfır dış bağımlılıkla tertemiz akıyoruz, ne soruyorsun?"}]
 
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
@@ -26,7 +26,7 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
             reply = ""
             handled_locally = False
 
-            # 1. İstediğin günlük kelimeler (Web'e gitmeden anında yerel yanıt)
+            # 1. İstediğin günlük kelimeler (Web'e gitmeden anında yerel ve net yanıt)
             if lower_prompt in ["sa", "selam", "slm"]:
                 reply = "Aleykümselam kanka, nasılsın?"
                 handled_locally = True
@@ -40,18 +40,18 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                 reply = "Bir şey değil kanka!"
                 handled_locally = True
 
-            # 2. Günlük kalıplar dışındaki her şey için gelişmiş web arama motoru
+            # 2. Günlük kalıplar dışındaki her şey için harici modül istemeyen web arama motoru
             if not handled_locally:
                 success = False
-                for attempt in range(3):  # Şansı artırmak için deneme hakkını 3 yaptık
+                for attempt in range(3):
                     try:
                         system_prefix = (
                             "Sen Lorvantisin. Türkiye'nin web destekli en akıllı yapay zekasısın. "
-                            "Dünya üzerindeki tüm ülkeleri, başkentlerini, para birimlerini, tarihini; "
+                            "Dünya üzerindeki tüm ülkeleri, başkentlerini, para birimlerini; "
                             "Türkiye'deki 81 ilin tamamını (plakaları, nüfusları, coğrafi özellikleri, nesi meşhur olduğu dahil) eksiksiz tanır ve tanıtırın. "
-                            "Ayrıca aktif futbolu, tüm ligleri, güncel futbolcuları (Kerem Aktürkoğlu, Arda Güler vb.), kulüpleri (Fenerbahçe vb.), "
+                            "Ayrıca aktif futbolu, tüm ligleri, güncel futbolcuları (Kerem Aktürkoğlu vb.), kulüpleri (Fenerbahçe vb.), "
                             "Valorant gibi oyunları, tarihi ve uzayı derinlemesine bilirsin. "
-                            "Kullanıcıya her zaman samimi, kanka diliyle, net, doyurucu ve doğrudan soruya odaklanarak cevap verirsin. Soru: "
+                            "Kullanıcıya her zaman samimi, kanka diliyle, net ve doğrudan soruya odaklanarak cevap verirsin. Soru: "
                         )
                         
                         full_query = system_prefix + cleaned_prompt
@@ -66,7 +66,7 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                             method='GET'
                         )
                         
-                        with urllib.request.urlopen(req, timeout=12) as response:
+                        with urllib.request.urlopen(req, timeout=10) as response:
                             if response.getcode() == 200:
                                 data = response.read().decode('utf-8').strip()
                                 if data and "402" not in data:
@@ -74,12 +74,11 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                                     success = True
                                     break
                     except Exception:
-                        time.sleep(0.4)
+                        time.sleep(0.3)
                         continue
                 
-                # Web araması anlık takılırsa şehirleri, ülkeleri ve futbolu kaçırmayan akıllı yedek
+                # Web araması takılırsa şehirleri, ülkeleri ve futbolu nokta atışı tanıtan akıllı yedek
                 if not success:
-                    # Şehir / Ülke tanıtımları
                     if any(w in lower_prompt for w in ["tanıt", "hakkında", "nerede", "nüfusu", "plakası"]):
                         if "mardin" in lower_prompt:
                             reply = "Mardin, Güneydoğu Anadolu Bölgesi'nde yer alan; taş mimarisi, dar sokakları, tarihi kaleleri ve eşsiz Mezopotamya manzarasıyla büyüleyen **47 plakalı** efsanevi şehrimizdir kanka! 🏛️"
@@ -90,20 +89,17 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                         else:
                             reply = f"Kanka **'{cleaned_prompt}'** yerini veya şehrini eyvallah biliyoruz; tarihiyle ve kültürüyle bambaşka bir noktadır. Başka hangi şehri veya ülkeyi merak ediyorsun? 😎"
                     
-                    # Aktif futbolcular ve takımlar
                     elif any(w in lower_prompt for w in ["kerem aktürkoğlu", "aktürkoğlu", "futbolcu", "fenerbahçe", "fener", "arda güler"]):
                         if "kerem" in lower_prompt:
                             reply = "Kerem Aktürkoğlu, Türk futbolunun hızı, çalım yeteneği ve bitiriciliğiyle göz dolduran milli kanat oyuncusudur kanka! ⚡⚽"
                         else:
-                            reply = "Futbol dünyası ve Süper Lig her zaman heyecan dolu kanka! Fenerbahçe ise şampiyonluk yolunda kadro kalitesiyle ve taraftarıyla ligin tozunu attıran dev bir camiadır 💛💙 Başka hangi futbolcuyu veya takımı konuşuyoruz?"
+                            reply = "Futbol dünyası ve Süper Lig her zaman heyecan dolu kanka! Fenerbahçe ise şampiyonluk yolunda kadro kalitesiyle ve taraftarıyla ligin tozunu attıran dev bir camiadır 💛💙"
                     
-                    # Valorant ve Donanım
                     elif "valorant" in lower_prompt:
                         reply = "Valorant, Riot Games'in Riot Client üzerinden oynanan taktiksel FPS oyunudur kanka. Bilgisayarına indirip Vanguard korumasıyla oynayabilirsin! 🎮"
                     elif "windows 10" in lower_prompt or "format" in lower_prompt:
                         reply = "Kanka Windows 10 kurmak için 8GB'lık bir USB'ye Media Creation Tool ile ISO yazdırıp Boot menüsünden (F12/F11) yükleyebilirsin! 😎"
                     
-                    # Genel yedek
                     else:
                         reply = f"Kanka **'{cleaned_prompt}'** konusunu inceledik. İnternet bağlantısında anlık bir dalgalanma oldu ama tüm şehirlerin, ülkelerin ve futbol dünyasının detaylarını hafızamızda tutuyoruz. Tekrar dener misin? 🔥"
 
