@@ -1,6 +1,6 @@
 import streamlit as st
 import urllib.request
-import json
+import urllib.parse
 
 st.set_page_config(page_title="Lorvantis AI", page_icon="🤖")
 
@@ -8,7 +8,7 @@ st.title("🤖 Lorvantis AI")
 st.caption("Türkiye’nin web yapay zekası")
 
 if "messages" not in st.session_state:
-    st.session_state["messages"] = [{"role": "assistant", "content": "Merhaba. Lorvantis aktif. Futboldan uzaya, tarihten oyunlara kadar tüm verilerle buradayım. Ne öğrenmek istiyorsun?"}]
+    st.session_state["messages"] = [{"role": "assistant", "content": "Merhaba. Lorvantis aktif. Tüm Türkçe kelimeler, kısaltmalar, futbol, uzay ve oyunlar cebimde. Ne öğrenmek istiyorsun?"}]
 
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
@@ -18,35 +18,29 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
     st.chat_message("user").write(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("Lorvantis düşünüyor..."):
+        with st.spinner("Lorvantis inceliyor ve düşünüyor..."):
             try:
-                api_url = "https://text.pollinations.ai/?search=true"
+                # Türkçe kelimeleri, TDK kısaltmalarını ve genel kültürü eksiksiz bilen sistem talimatı:
+                system_prefix = (
+                    "Sen Lorvantisin. Türkiye'nin web yapay zekasısın. "
+                    "Türkçedeki tüm resmi, kurumsal, günlük ve TDK kısaltmalarını, kelimelerin anlamlarını, "
+                    "futbol tarihini, savaş tarihlerini, şehirleri ve oyunları eksiksiz bilirsin. "
+                    "Kullanıcı sana bir kısaltma veya kelime sorduğunda (Örn: TCDD, vb., vs., TDK vb.) "
+                    "açılımını, anlamını ve detayını kanka diliyle ama net bir şekilde açıklarsın. "
+                    "Soru: "
+                )
                 
-                system_prompt = """Senin adın Lorvantis. Türkiye'nin web yapay zekasısın. 
-                Kullanıcıyla 'kanka' diliyle konuşursun ancak bilgide asla taviz vermezsin. 
-                Futbol tarihi, savaş tarihi, dünya şehirleri, ülkeler, uzay bilimi ve video oyunları dahil olmak üzere web üzerindeki tüm bilgilere hakimsin. 
-                Kullanıcı bir şey sorduğunda en doğru, güncel ve detaylı bilgiyi verirsin. Asla 'bilmiyorum' demezsin."""
+                full_query = system_prefix + prompt
+                encoded_query = urllib.parse.quote(full_query)
                 
-                messages_payload = [{"role": "system", "content": system_prompt}]
-                
-                for m in st.session_state.messages[-10:]:
-                    messages_payload.append({"role": m["role"], "content": m["content"]})
-                
-                # 402 ücret duvarına takılmamak için modeli 'sur' yaptık (tamamen ücretsiz)
-                payload = json.dumps({
-                    "messages": messages_payload,
-                    "model": "sur",
-                    "jsonMode": False
-                }).encode('utf-8')
+                api_url = f"https://text.pollinations.ai/{encoded_query}?search=true"
                 
                 req = urllib.request.Request(
                     api_url, 
-                    data=payload, 
                     headers={
-                        'Content-Type': 'application/json', 
                         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
                     },
-                    method='POST'
+                    method='GET'
                 )
                 
                 with urllib.request.urlopen(req, timeout=30) as response:
@@ -54,7 +48,7 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                     if not reply:
                         reply = "Sunucu boş döndü kanka, bir daha yazar mısın?"
             except Exception as e:
-                reply = f"Hata yakalandı kanka: {e} 💀 402 duvarını delmek için başka alternatiflere bakarız."
+                reply = f"Hata yakalandı kanka: {e} 💀 Bağlantıda anlık bir sıkıntı oldu, tekrar deneyelim."
 
             st.write(reply)
             st.session_state.messages.append({"role": "assistant", "content": reply})
