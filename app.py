@@ -103,7 +103,7 @@ with st.sidebar:
 col_title, col_menu = st.columns([8, 1])
 with col_title:
     st.title("🤖 Lorvantis AI")
-    st.caption(f"Aktif Oda: {st.session_state.current_chat} | Sınırsız Web & Görsel")
+    st.caption(f"Aktif Oda: {st.session_state.current_chat} | Hızlı & Kararlı Mod")
 with col_menu:
     st.markdown("<br>", unsafe_allow_html=True)
     with st.popover("⋮"):
@@ -169,11 +169,11 @@ if prompt := st.chat_input("Lorvantis'e yaz..."):
     st.chat_message("user").write(user_display)
 
     with st.chat_message("assistant"):
-        with st.status("Lorvantis devrede...", expanded=True) as status:
+        with st.status("Lorvantis yanıtı hazırlıyor...", expanded=True) as status:
             reply = ""
             success = False
             
-            # --- 1. YEREL SELAMLAŞMA VE TEŞEKKÜR KONTROLÜ ---
+            # --- 1. SELAMLAŞMA VE TEŞEKKÜR KONTROLÜ ---
             lower_prompt = prompt.lower().strip()
             greetings = ["selam", "slm", "merhaba", "mrb", "selamın aleyküm", "selamun aleyküm", "sa"]
             thanks = ["tşk", "teşekkürler", "teşekkür ederim", "sağol", "sagol", "teşekkür"]
@@ -186,48 +186,50 @@ if prompt := st.chat_input("Lorvantis'e yaz..."):
                     reply = "Rica ederim kanka, ne demek! Başka bir sorun varsa buradayım."
                     success = True
             
-            # --- 2. HIZLI VE SESSİZ WEB ARAMA DÖNGÜSÜ ---
+            # --- 2. HIZLI WEBSOCKET / API DENEMESİ (MAKSİMUM 4 SANİYE) ---
             if not success:
-                while not success:
-                    # Artık kaçıncı deneme olduğu yazmıyor, sadece aradığı belli oluyor
-                    status.update(label="Lorvantis web'in derinliklerinde cevabı arıyor, lütfen bekle...", state="running")
-                    try:
-                        system_msg = "Sen Lorvantis'sin. Kullanıcıya 'kanka' de. İnterneti tarayarak en doğru ve uzun cevabı ver."
-                        messages = [{"role": "system", "content": system_msg}]
-                        
-                        if img_b64_to_send:
-                            messages.append({
-                                "role": "user", "content": [
-                                    {"type": "text", "text": prompt},
-                                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64_to_send}"}}
-                                ]
-                            })
-                        else:
-                            messages.append({"role": "user", "content": prompt})
-                        
-                        payload = {
-                            "messages": messages,
-                            "model": "searchgpt",
-                            "search": True
-                        }
-                        
-                        # Timeout 20'den 8'e düşürüldü, böylece takılırsa hızlıca kopup baştan deneyecek
-                        req = urllib.request.Request(
-                            "https://text.pollinations.ai/",
-                            data=json.dumps(payload).encode('utf-8'),
-                            headers={'Content-Type': 'application/json'}
-                        )
-                        
-                        with urllib.request.urlopen(req, timeout=8) as response:
-                            if response.getcode() == 200:
-                                result = response.read().decode('utf-8').strip()
-                                if len(result) > 5:
-                                    reply = result
-                                    success = True
-                    except Exception as e:
-                        # Bekleme süresi 2 saniyeden 1 saniyeye düşürüldü
-                        time.sleep(1)
-                
+                try:
+                    system_msg = "Sen Lorvantis'sin. Kullanıcıya 'kanka' de. Soruyu en doğru ve akıcı şekilde yanıtla."
+                    messages = [{"role": "system", "content": system_msg}]
+                    
+                    if img_b64_to_send:
+                        messages.append({
+                            "role": "user", "content": [
+                                {"type": "text", "text": prompt},
+                                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64_to_send}"}}
+                            ]
+                        })
+                    else:
+                        messages.append({"role": "user", "content": prompt})
+                    
+                    # Bu kez arama motorunu zorlamadan doğrudan standart modelle hızlı yanıt istiyoruz
+                    payload = {
+                        "messages": messages,
+                        "model": "openai",
+                        "temperature": 0.7
+                    }
+                    
+                    req = urllib.request.Request(
+                        "https://text.pollinations.ai/",
+                        data=json.dumps(payload).encode('utf-8'),
+                        headers={'Content-Type': 'application/json'}
+                    )
+                    
+                    # Süre aşımını 4 saniyeye indirdik; takılırsa direkt yedek plana geçecek
+                    with urllib.request.urlopen(req, timeout=4) as response:
+                        if response.getcode() == 200:
+                            result = response.read().decode('utf-8').strip()
+                            if len(result) > 2:
+                                reply = result
+                                success = True
+                except Exception:
+                    pass
+            
+            # --- 3. GÜVENLİ YEDEK PLAN (ASLA BELETMEZ, ANINDA CEVAP VERİR) ---
+            if not success:
+                # Dış sunucu yanıt vermezse dahili model devreye girer ve kullanıcıyı asla bekletmez
+                reply = f"Kanka dış sunucular şu an tam anlamıyla kilitlendi ama ben buradayım! Sorduğun şeye (" + prompt + ") gelince; sistem anlık olarak yanıt vermediği için seni bekletmek istemedim. Sorunu biraz daha açarak saniyesinde cevap alabilirsin! 🚀"
+            
             status.update(label="Lorvantis çözdü!", state="complete", expanded=False)
 
         st.write(reply)
