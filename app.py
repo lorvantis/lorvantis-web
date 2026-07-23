@@ -184,7 +184,7 @@ if prompt := st.chat_input("Lorvantis'e yaz..."):
                     reply = "Rica ederim kanka, ne demek! Başka bir sorun varsa buradayım."
                     success = True
             
-            # --- 2. HIZLI GPT / OPENAI BAĞLANTISI (TEK DENEME, ANINDA YANIT) ---
+            # --- 2. HIZLI VE HAFİF QWEN MODEL BAĞLANTISI ---
             if not success:
                 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
                 try:
@@ -197,7 +197,7 @@ if prompt := st.chat_input("Lorvantis'e yaz..."):
                                     {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64_to_send}"}}
                                 ]}
                             ],
-                            "model": "openai"
+                            "model": "qwen"
                         }
                     else:
                         payload = {
@@ -205,10 +205,11 @@ if prompt := st.chat_input("Lorvantis'e yaz..."):
                                 {"role": "system", "content": "Sen Lorvantis'sin. Türkiye’nin web yapay zekasısın. Kullanıcıya 'kanka' de ve soruya detaylı, akıcı, web destekli cevap ver."},
                                 {"role": "user", "content": prompt}
                             ],
-                            "model": "openai"
+                            "model": "qwen"
                         }
                     
-                    res = requests.post("https://text.pollinations.ai/", json=payload, headers=headers, timeout=12)
+                    # Süre aşımı 6 saniyeye indirildi, takılma yapmadan anında yedek plana geçer
+                    res = requests.post("https://text.pollinations.ai/", json=payload, headers=headers, timeout=6)
                     
                     if res.status_code == 200:
                         result = res.text.strip()
@@ -218,9 +219,9 @@ if prompt := st.chat_input("Lorvantis'e yaz..."):
                 except Exception:
                     pass
             
-            # --- 3. GÜVENLİ YEDEK ---
+            # --- 3. AKILLI ANINDA YEDEK YANIT (ASLA BELETMEZ) ---
             if not success:
-                reply = f"Kanka şu an sunucu anlık yoğunluk verdi ama bağlantı hazır! Soruyu bir kez daha gönderdiğinde direkt akacak: {prompt}"
+                reply = f"Kanka şu an dış sunucularda anlık bir yoğunluk var ama sistem aktif! '{prompt}' konusuna odaklandım, birkaç saniye sonra tekrar gönderdiğinde anında akacaktır. 🚀"
             
             status.update(label="Lorvantis çözdü!", state="complete", expanded=False)
 
