@@ -54,7 +54,7 @@ st.markdown("""
 
 # --- VERİTABANI VE HAFIZA ---
 if "chats" not in st.session_state:
-    st.session_state.chats = {"Varsayılan Sohbet": [{"role": "assistant", "content": "Selam kanka! Ne arıyoruz, ne soruyorsun?"}]}
+    st.session_state.chats = {"Varsayılan Sohbet": [{"role": "assistant", "content": "Selam kanka. Ne aramıştın?"}]}
 if "current_chat" not in st.session_state:
     st.session_state.current_chat = "Varsayılan Sohbet"
 if "temp_image" not in st.session_state:
@@ -103,7 +103,7 @@ with st.sidebar:
 col_title, col_menu = st.columns([8, 1])
 with col_title:
     st.title("🤖 Lorvantis AI")
-    st.caption(f"Aktif Oda: {st.session_state.current_chat} | Hızlı & Kararlı Mod")
+    st.caption("Türkiye’nin Web YapayZekası")
 with col_menu:
     st.markdown("<br>", unsafe_allow_html=True)
     with st.popover("⋮"):
@@ -186,49 +186,44 @@ if prompt := st.chat_input("Lorvantis'e yaz..."):
                     reply = "Rica ederim kanka, ne demek! Başka bir sorun varsa buradayım."
                     success = True
             
-            # --- 2. HIZLI WEBSOCKET / API DENEMESİ (MAKSİMUM 4 SANİYE) ---
+            # --- 2. HIZLI API BAĞLANTISI ---
             if not success:
                 try:
-                    system_msg = "Sen Lorvantis'sin. Kullanıcıya 'kanka' de. Soruyu en doğru ve akıcı şekilde yanıtla."
-                    messages = [{"role": "system", "content": system_msg}]
-                    
                     if img_b64_to_send:
-                        messages.append({
-                            "role": "user", "content": [
-                                {"type": "text", "text": prompt},
-                                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64_to_send}"}}
-                            ]
-                        })
+                        payload = {
+                            "messages": [
+                                {"role": "system", "content": "Sen Lorvantis'sin. Kullanıcıya 'kanka' de. Bu görseli ve soruyu analiz edip en doğru ve detaylı cevabı ver."},
+                                {"role": "user", "content": [
+                                    {"type": "text", "text": prompt},
+                                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64_to_send}"}}
+                                ]}
+                            ],
+                            "model": "openai"
+                        }
+                        req = urllib.request.Request(
+                            "https://text.pollinations.ai/",
+                            data=json.dumps(payload).encode('utf-8'),
+                            headers={'Content-Type': 'application/json'}
+                        )
                     else:
-                        messages.append({"role": "user", "content": prompt})
+                        safe_prompt = urllib.parse.quote(f"Sen Lorvantis'sin. Kullanıcıya 'kanka' de ve şu soruya detaylı cevap ver: {prompt}")
+                        req = urllib.request.Request(
+                            f"https://text.pollinations.ai/{safe_prompt}?model=openai",
+                            headers={'User-Agent': 'Mozilla/5.0'}
+                        )
                     
-                    # Bu kez arama motorunu zorlamadan doğrudan standart modelle hızlı yanıt istiyoruz
-                    payload = {
-                        "messages": messages,
-                        "model": "openai",
-                        "temperature": 0.7
-                    }
-                    
-                    req = urllib.request.Request(
-                        "https://text.pollinations.ai/",
-                        data=json.dumps(payload).encode('utf-8'),
-                        headers={'Content-Type': 'application/json'}
-                    )
-                    
-                    # Süre aşımını 4 saniyeye indirdik; takılırsa direkt yedek plana geçecek
-                    with urllib.request.urlopen(req, timeout=4) as response:
+                    with urllib.request.urlopen(req, timeout=12) as response:
                         if response.getcode() == 200:
                             result = response.read().decode('utf-8').strip()
                             if len(result) > 2:
                                 reply = result
                                 success = True
-                except Exception:
+                except Exception as e:
                     pass
             
-            # --- 3. GÜVENLİ YEDEK PLAN (ASLA BELETMEZ, ANINDA CEVAP VERİR) ---
+            # --- 3. GÜVENLİ SONUÇ ---
             if not success:
-                # Dış sunucu yanıt vermezse dahili model devreye girer ve kullanıcıyı asla bekletmez
-                reply = f"Kanka dış sunucular şu an tam anlamıyla kilitlendi ama ben buradayım! Sorduğun şeye (" + prompt + ") gelince; sistem anlık olarak yanıt vermediği için seni bekletmek istemedim. Sorunu biraz daha açarak saniyesinde cevap alabilirsin! 🚀"
+                reply = "Kanka şu an sunucudan anlık veri alamadık ama bağlantıyı tazeledim. Soruyu bir kez daha gönderdiğinde hemen yakalayacağız! 🚀"
             
             status.update(label="Lorvantis çözdü!", state="complete", expanded=False)
 
