@@ -61,7 +61,6 @@ if "temp_image" not in st.session_state:
     st.session_state.temp_image = None
 if "ready_image" not in st.session_state:
     st.session_state.ready_image = None
-# Yükleyiciyi sıfırlamak için gereken anahtar (İptal sorununun çözümü)
 if "uploader_key" not in st.session_state:
     st.session_state.uploader_key = 1
 
@@ -120,7 +119,6 @@ for msg in st.session_state.chats[st.session_state.current_chat]:
 with st.popover("➕"):
     tab1, tab2 = st.tabs(["🖼️ Galeriden", "📸 Kamera"])
     with tab1:
-        # Key ekleyerek uploader'ı sıfırlanabilir hale getirdik
         uploaded_file = st.file_uploader("Seç", type=["png", "jpg", "jpeg"], key=f"up_{st.session_state.uploader_key}")
         if uploaded_file:
             st.session_state.temp_image = uploaded_file.getvalue()
@@ -139,7 +137,7 @@ if st.session_state.temp_image:
     with col_iptal:
         if st.button("❌ İptal Et", use_container_width=True):
             st.session_state.temp_image = None
-            st.session_state.uploader_key += 1 # Anahtarı değiştirerek eski resmi çöpe atıyoruz
+            st.session_state.uploader_key += 1 
             st.rerun()
     with col_yolla:
         if st.button("✅ Mesajla Yolla", use_container_width=True):
@@ -171,52 +169,64 @@ if prompt := st.chat_input("Lorvantis'e yaz..."):
     st.chat_message("user").write(user_display)
 
     with st.chat_message("assistant"):
-        with st.status("Lorvantis web'i tarıyor...", expanded=True) as status:
+        with st.status("Lorvantis devrede...", expanded=True) as status:
             reply = ""
             success = False
             
-            # API ÇÖKME ÖNLEYİCİ: Her şeyi tek ve stabil POST yöntemiyle gönderiyoruz
-            try:
-                system_msg = "Sen Lorvantis'sin. Kullanıcıya 'kanka' de. İnterneti tarayarak en doğru ve uzun cevabı ver."
-                
-                messages = [
-                    {"role": "system", "content": system_msg}
-                ]
-                
-                # Resim varsa resimli format, yoksa düz metin formatı
-                if img_b64_to_send:
-                    messages.append({
-                        "role": "user", "content": [
-                            {"type": "text", "text": prompt},
-                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64_to_send}"}}
-                        ]
-                    })
-                else:
-                    messages.append({"role": "user", "content": prompt})
-                
-                payload = {
-                    "messages": messages,
-                    "model": "searchgpt", # İnternet taraması için özel model
-                    "search": True
-                }
-                
-                req = urllib.request.Request(
-                    "https://text.pollinations.ai/",
-                    data=json.dumps(payload).encode('utf-8'),
-                    headers={'Content-Type': 'application/json'}
-                )
-                
-                with urllib.request.urlopen(req, timeout=20) as response:
-                    if response.getcode() == 200:
-                        result = response.read().decode('utf-8').strip()
-                        if len(result) > 5:
-                            reply = result
-                            success = True
-            except Exception as e:
-                pass
-
+            # --- 1. YEREL SELAMLAŞMA VE TEŞEKKÜR KONTROLÜ ---
+            lower_prompt = prompt.lower().strip()
+            greetings = ["selam", "slm", "merhaba", "mrb", "selamın aleyküm", "selamun aleyküm", "sa"]
+            thanks = ["tşk", "teşekkürler", "teşekkür ederim", "sağol", "sagol", "teşekkür"]
+            
+            # Eğer resim yoksa ve mesaj basit bir selamsa, webde arama yapma
+            if not img_b64_to_send:
+                if lower_prompt in greetings:
+                    reply = "Aleykümselam kanka, hoş geldin! Nasılsın, ne var ne yok, nasıl yardımcı olabilirim?"
+                    success = True
+                elif lower_prompt in thanks:
+                    reply = "Rica ederim kanka, ne demek! Başka bir sorun varsa buradayım."
+                    success = True
+            
+            # --- 2. ASLA PES ETMEYEN WEB ARAMA DÖNGÜSÜ ---
             if not success:
-                reply = "Kanka şu an sunucular o kadar yoğun ki sistem ufak bir nefes darlığı yaşadı. Sorunu hiçbir şey değiştirmeden tekrar gönder, bu sefer yakalayacağım! 🚀"
+                attempt = 1
+                while not success:
+                    status.update(label=f"Lorvantis web'i tarıyor... (Deneme {attempt}) Sunucu bekleniyor...", state="running")
+                    try:
+                        system_msg = "Sen Lorvantis'sin. Kullanıcıya 'kanka' de. İnterneti tarayarak en doğru ve uzun cevabı ver."
+                        messages = [{"role": "system", "content": system_msg}]
+                        
+                        if img_b64_to_send:
+                            messages.append({
+                                "role": "user", "content": [
+                                    {"type": "text", "text": prompt},
+                                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64_to_send}"}}
+                                ]
+                            })
+                        else:
+                            messages.append({"role": "user", "content": prompt})
+                        
+                        payload = {
+                            "messages": messages,
+                            "model": "searchgpt",
+                            "search": True
+                        }
+                        
+                        req = urllib.request.Request(
+                            "https://text.pollinations.ai/",
+                            data=json.dumps(payload).encode('utf-8'),
+                            headers={'Content-Type': 'application/json'}
+                        )
+                        
+                        with urllib.request.urlopen(req, timeout=20) as response:
+                            if response.getcode() == 200:
+                                result = response.read().decode('utf-8').strip()
+                                if len(result) > 5:
+                                    reply = result
+                                    success = True
+                    except Exception as e:
+                        attempt += 1
+                        time.sleep(2) # 2 saniye bekle ve tekrar saldır
                 
             status.update(label="Lorvantis çözdü!", state="complete", expanded=False)
 
