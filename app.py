@@ -1,7 +1,6 @@
 import streamlit as st
 import requests
 import json
-import time
 import base64
 import streamlit.components.v1 as components
 
@@ -168,7 +167,7 @@ if prompt := st.chat_input("Lorvantis'e yaz..."):
     st.chat_message("user").write(user_display)
 
     with st.chat_message("assistant"):
-        with st.status("Lorvantis web'de cevabı arıyor...", expanded=True) as status:
+        with st.status("Lorvantis yanıtı hazırlıyor...", expanded=True) as status:
             reply = ""
             success = False
             
@@ -185,47 +184,43 @@ if prompt := st.chat_input("Lorvantis'e yaz..."):
                     reply = "Rica ederim kanka, ne demek! Başka bir sorun varsa buradayım."
                     success = True
             
-            # --- 2. ASLA PES ETMEYEN (PİTBULL) WEB ARAMA DÖNGÜSÜ ---
+            # --- 2. HIZLI GPT / OPENAI BAĞLANTISI (TEK DENEME, ANINDA YANIT) ---
             if not success:
                 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-                models_to_try = ["openai", "mistral", "llama"]
-                
-                while not success:
-                    for model in models_to_try:
-                        try:
-                            if img_b64_to_send:
-                                payload = {
-                                    "messages": [
-                                        {"role": "system", "content": "Sen Lorvantis'sin. Türkiye’nin web yapay zekasısın. Kullanıcıya 'kanka' de. Bu görseli ve soruyu analiz edip en doğru ve detaylı cevabı ver."},
-                                        {"role": "user", "content": [
-                                            {"type": "text", "text": prompt},
-                                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64_to_send}"}}
-                                        ]}
-                                    ],
-                                    "model": model
-                                }
-                            else:
-                                payload = {
-                                    "messages": [
-                                        {"role": "system", "content": "Sen Lorvantis'sin. Türkiye’nin web yapay zekasısın. Kullanıcıya 'kanka' de ve soruya detaylı, akıcı, web destekli cevap ver."},
-                                        {"role": "user", "content": prompt}
-                                    ],
-                                    "model": model
-                                }
-                            
-                            res = requests.post("https://text.pollinations.ai/", json=payload, headers=headers, timeout=10)
-                            
-                            if res.status_code == 200:
-                                result = res.text.strip()
-                                if result and len(result) > 2:
-                                    reply = result
-                                    success = True
-                                    break
-                        except Exception:
-                            continue
+                try:
+                    if img_b64_to_send:
+                        payload = {
+                            "messages": [
+                                {"role": "system", "content": "Sen Lorvantis'sin. Türkiye’nin web yapay zekasısın. Kullanıcıya 'kanka' de. Bu görseli ve soruyu analiz edip en doğru ve detaylı cevabı ver."},
+                                {"role": "user", "content": [
+                                    {"type": "text", "text": prompt},
+                                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64_to_send}"}}
+                                ]}
+                            ],
+                            "model": "openai"
+                        }
+                    else:
+                        payload = {
+                            "messages": [
+                                {"role": "system", "content": "Sen Lorvantis'sin. Türkiye’nin web yapay zekasısın. Kullanıcıya 'kanka' de ve soruya detaylı, akıcı, web destekli cevap ver."},
+                                {"role": "user", "content": prompt}
+                            ],
+                            "model": "openai"
+                        }
                     
-                    if not success:
-                        time.sleep(1.5) # Sunucu yanıt verene kadar döngüye devam eder, asla çıkmaz
+                    res = requests.post("https://text.pollinations.ai/", json=payload, headers=headers, timeout=12)
+                    
+                    if res.status_code == 200:
+                        result = res.text.strip()
+                        if result and len(result) > 2:
+                            reply = result
+                            success = True
+                except Exception:
+                    pass
+            
+            # --- 3. GÜVENLİ YEDEK ---
+            if not success:
+                reply = f"Kanka şu an sunucu anlık yoğunluk verdi ama bağlantı hazır! Soruyu bir kez daha gönderdiğinde direkt akacak: {prompt}"
             
             status.update(label="Lorvantis çözdü!", state="complete", expanded=False)
 
