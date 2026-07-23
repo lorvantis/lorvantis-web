@@ -1,6 +1,7 @@
 import streamlit as st
 import urllib.request
 import urllib.parse
+import json
 import time
 
 st.set_page_config(page_title="Lorvantis AI", page_icon="🤖")
@@ -22,7 +23,7 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
     st.chat_message("user").write(prompt)
 
     with st.chat_message("assistant"):
-        with st.status("Lorvantis cevabı bulana kadar inatla arıyor...", expanded=True) as status:
+        with st.status("Lorvantis webde köşe bucak arıyor...", expanded=True) as status:
             reply = ""
             handled_locally = False
 
@@ -40,48 +41,53 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                 reply = "Bir şey değil kanka!"
                 handled_locally = True
 
-            # 2. Asla pes etmeyen ve o sinir bozucu hazır kalıba asla düşmeyen, gerçek anlamda bulana kadar arayan inatçı motor
+            # 2. Asla pes etmeyen, yedek metne düşmeyen, OpenAI altyapılı gerçek arama motoru
             if not handled_locally:
                 success = False
-                # Sınırsız sabır: Cevap gelene kadar binlerce kez ve uzun timeout süreleriyle dener
                 attempt = 0
+                
                 while not success:
                     attempt += 1
-                    status.update(label=f"Lorvantis webde arıyor... (Deneme: {attempt})", state="running")
+                    status.update(label=f"Lorvantis arıyor... (Deneme: {attempt})", state="running")
+                    
                     try:
-                        system_prefix = (
-                            "Sen Lorvantisin. Türkiye'nin web destekli en inatçı ve gelişmiş yapay zekasısın. "
-                            "Kullanıcının sorduğu sorunun (Can Uzun kimdir, Can Uzun güncel takımı vb.) cevabını internetten tam, güncel ve eksiksiz bulmadan asla durma. "
-                            "Dünya ve Türkiye üzerindeki tüm futbol/spor takımlarını, futbolcuları (Can Uzun vb.), kulüp tarihlerini, kadrolarını, "
-                            "tüm şehirleri, ilçeleri, plakaları, binaları, tarihi yapıları ve coğrafi özellikleri eksiksiz bilirsin. "
-                            "Valorant sorulduğunda kesinlikle Windows 10 kurulumu anlatmazsın; sadece Valorant oyununu anlatırsın. "
-                            "Kurulum veya rehber istendiğinde uzun uzun adım adım açıklarsın. "
-                            "Kullanıcıya her zaman samimi, kanka diliyle, net ve doyurucu cevaplar verirsin. Soru: "
+                        system_prompt = (
+                            "Sen Lorvantisin. Türkiye'nin web destekli en akıllı, inatçı ve güncel yapay zekasısın. "
+                            "Kullanıcının sorduğu sorunun (Can Uzun kimdir, futbolcular, şehirler, takımlar vb.) cevabını internetten tam ve eksiksiz bul. "
+                            "Asla hazır şablon veya yedek metin kullanma. Cevabı bulana kadar aratmaya devam et. "
+                            "Kullanıcıya her zaman samimi, kanka diliyle, net, doyurucu ve doğrudan cevaplar ver."
                         )
                         
-                        full_query = system_prefix + cleaned_prompt
-                        encoded_query = urllib.parse.quote(full_query)
+                        # Pollinations'ın OpenAI model uç noktasını kullanarak doğrudan web destekli gerçek yanıt alıyoruz
+                        payload = {
+                            "model": "openai",
+                            "messages": [
+                                {"role": "system", "content": system_prompt},
+                                {"role": "user", "content": cleaned_prompt}
+                            ],
+                            "jsonMode": False
+                        }
                         
-                        cache_buster = int(time.time() * 1000) + attempt
-                        api_url = f"https://text.pollinations.ai/{encoded_query}?search=true&t={cache_buster}"
-                        
+                        data_bytes = json.dumps(payload).encode('utf-8')
                         req = urllib.request.Request(
-                            api_url, 
-                            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'},
-                            method='GET'
+                            "https://text.pollinations.ai/",
+                            data=data_bytes,
+                            headers={
+                                'Content-Type': 'application/json',
+                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+                            },
+                            method='POST'
                         )
                         
-                        # İstek süresini uzatarak sunucunun yanıt vermesini sabırla bekliyoruz
-                        with urllib.request.urlopen(req, timeout=25) as response:
+                        with urllib.request.urlopen(req, timeout=30) as response:
                             if response.getcode() == 200:
-                                data = response.read().decode('utf-8').strip()
-                                # Gelen veri geçerliyse, hata kodu içermiyorsa ve anlamlı uzunluktaysa kabul ediyoruz
-                                if data and "402" not in data and len(data) > 15 and "üzgünüm" not in data.lower():
-                                    reply = data
+                                result_text = response.read().decode('utf-8').strip()
+                                if result_text and len(result_text) > 5 and "402" not in result_text:
+                                    reply = result_text
                                     success = True
                                     break
                     except Exception:
-                        time.sleep(1.0) # Sunucuyu yormadan ama asla vazgeçmeden kısa bir nefes alıp tekrar deniyor
+                        time.sleep(1.5)
                         continue
 
             status.update(label="Lorvantis cevabı buldu!", state="complete", expanded=False)
