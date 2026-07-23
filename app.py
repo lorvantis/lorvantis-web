@@ -4,10 +4,64 @@ import urllib.parse
 import json
 import time
 
-st.set_page_config(page_title="Lorvantis AI", page_icon="🤖")
+st.set_page_config(page_title="Lorvantis AI", page_icon="🤖", layout="centered")
 
-st.title("🤖 Lorvantis AI")
-st.caption("Türkiye’nin Web YapayZekası")
+# --- MOBİL UYGULAMA (PWA) VE ARAYÜZ ENJEKSİYONU ---
+st.markdown("""
+<style>
+    /* Üst başlık hizalama ve artı butonu tasarımı için modern dokunuşlar */
+    .stApp header {visibility: hidden;}
+    
+    /* Sohbet alanı ve input uyumu */
+    .stChatInput {
+        position: relative;
+    }
+</style>
+
+<script>
+    // Mobil/Web tarayıcılarda ana ekrana ekleme (PWA) tetikleyicisi
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        console.log("PWA yüklemeye hazır!");
+    });
+
+    window.triggerInstall = function() {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('Kullanıcı ana ekrana ekledi!');
+                }
+                deferredPrompt = null;
+            });
+        } else {
+            alert("Kanka tarayıcın veya cihazın bu özelliği destekliyor ya da zaten yüklü! Tarayıcı menüsünden 'Ana Ekrana Ekle' veya 'Uygulamayı Yükle' seçeneğini kullanabilirsin.");
+        }
+    };
+</script>
+""", unsafe_allow_html=True)
+
+# Arayüz Başlığı ve Altı
+col_title, col_btn = st.columns([4, 1])
+with col_title:
+    st.title("🤖 Lorvantis AI")
+    st.caption("Türkiye’nin Web YapayZekası")
+
+# --- ÜST MENÜDE YAN TARAFTA ARTI BUTONU (ANA EKRANA YÜKLE) ---
+with col_btn:
+    st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
+    if st.button("➕ Yükle", help="Lorvantis'i telefonuna veya masaüstüne uygulama olarak yükle"):
+        st.markdown("""
+            <script>
+                if (window.parent && window.parent.triggerInstall) {
+                    window.parent.triggerInstall();
+                } else {
+                    alert("Kanka tarayıcı menüsünden (üç nokta) 'Ana Ekrana Ekle' veya 'Uygulamayı Yükle' seçeneğine basarak telefonuna indirebilirsin!");
+                }
+            </script>
+        """, unsafe_allow_html=True)
 
 if "messages" not in st.session_state:
     st.session_state["messages"] = [{"role": "assistant", "content": "Selam kanka ne aramıştın?"}]
@@ -41,7 +95,7 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                 reply = "Bir şey değil kanka!"
                 handled_locally = True
 
-            # 2. Eskisi gibi o canavar gibi çalışan, %80+ başarı oranı veren GET arama motoru
+            # 2. Web arama motoru
             if not handled_locally:
                 success = False
                 attempt = 0
@@ -75,7 +129,7 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                         time.sleep(0.4)
                         continue
                 
-                # Eğer web anlık takılırsa, seni asla "tekrar yaz" diye bırakmayan, tüm soruları doğrudan şak diye açan dev akıllı yedek havuzu
+                # Yedek akıllı havuz
                 if not success:
                     if "bitlis" in lower_prompt:
                         reply = "Bitlis'in plakası **13** kanka! Tarihi evleri, minareleri ve Nemrut Krater Gölü ile Doğu Anadolu'nun inci şehirlerindendir 🏔️"
@@ -93,7 +147,7 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                     elif "beşiktaş" in lower_prompt:
                         reply = "Beşiktaş, köklü tarihi, siyah-beyaz renkleri ve coşkulu taraftarıyla Türk futbolunun çınarlarından biri olan dev kulüptür kanka! 🦅"
                     elif "barış alper yılmaz" in lower_prompt or "barış alper" in lower_prompt:
-                        reply = "Barış Alper Yılmaz, Galatasaray'da ve A Milli Takım'da forma giyen; inanılmaz hızı, fiziksel gücü ve joker özellikleriyle öne çıkan **30 milyon euro** değerinde yıldız oyuncudur kanka! ⚡⚽"
+                        reply = "Barış Alper Yılmaz, Galatasaray'da ve A Milli Takım'da forma giyen; inanılmaz hızı, fiziksel gücü ve joker özellikleriyle öne çıkan **30 milyon euro** değerindeki yıldız oyuncudur kanka! ⚡⚽"
                     elif "can uzun" in lower_prompt:
                         reply = "Can Uzun, 2005 doğumlu genç ve yetenekli bir Türk millî futbolcudur kanka! Kariyerine Bundesliga ekiplerinden Eintracht Frankfurt'ta devam ediyor ve on numara pozisyonunda oynuyor ⚽🔥"
                     elif "valorant" in lower_prompt:
