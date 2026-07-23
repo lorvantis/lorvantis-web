@@ -4,9 +4,48 @@ import urllib.parse
 import json
 import time
 import base64
+import streamlit.components.v1 as components
 
 # Sayfa ayarları
 st.set_page_config(page_title="Lorvantis AI", page_icon="🤖", layout="centered")
+
+# --- CSS İLE MESAJ BARINA BUTON GÖMME HİLESİ ---
+st.markdown("""
+    <style>
+        /* Mesaj barının sol tarafında buton için boşluk bırak */
+        [data-testid="stChatInput"] {
+            padding-left: 3rem !important;
+        }
+        
+        /* + Butonunu zorla mesaj barının sol içine sabitle */
+        div[data-testid="stPopover"] {
+            position: fixed;
+            bottom: 2rem;
+            left: 1.5rem;
+            z-index: 99999;
+        }
+        
+        /* Mobilde ekran daraldığında hizalamayı bozmaması için */
+        @media (max-width: 768px) {
+            div[data-testid="stPopover"] {
+                bottom: 1.5rem;
+                left: 1rem;
+            }
+        }
+        
+        /* Butonun kendi tasarımını ufaltıp şıklaştırma */
+        div[data-testid="stPopover"] button {
+            border-radius: 50%;
+            padding: 0.5rem;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
 # --- VERİTABANI VE HAFIZA (SESSION STATE) ---
 if "chats" not in st.session_state:
@@ -71,11 +110,11 @@ with col_menu:
 for msg in st.session_state.chats[st.session_state.current_chat]:
     st.chat_message(msg["role"]).write(msg["content"])
 
-# --- ALT KISIM: ➕ BUTONU (FOTOĞRAF/KAMERA) VE SOHBET BARI ---
+# --- ALT KISIM: ➕ BUTONU (FOTOĞRAF/KAMERA) ---
 img_base64 = None
 
-# Streamlit'te chat_input yanına buton koymak zor olduğundan, hemen üstüne şık bir "+" popover'ı koyuyoruz
-with st.popover("➕ Fotoğraf Yükle / Çek"):
+# CSS ile yerini ayarladığımız Popover butonu (Artık solda barın üstünde görünecek)
+with st.popover("➕"):
     tab1, tab2 = st.tabs(["🖼️ Galeriden Yükle", "📸 Kamera ile Çek"])
     with tab1:
         uploaded_file = st.file_uploader("Bir fotoğraf seç kanka", type=["png", "jpg", "jpeg"])
@@ -89,7 +128,7 @@ with st.popover("➕ Fotoğraf Yükle / Çek"):
         img_base64 = encode_image(camera_file)
         st.success("Fotoğraf çekildi! Şimdi aşağıdan sorunu sorabilirsin.")
 
-# Ana mesaj giriş alanı
+# --- SOHBET BARI VE YANIT SİSTEMİ ---
 if prompt := st.chat_input("Lorvantis'e bir soru sor veya görsel hakkında bir şey yaz..."):
     # Mesajı ekrana bas
     user_display = prompt
@@ -111,7 +150,6 @@ if prompt := st.chat_input("Lorvantis'e bir soru sor veya görsel hakkında bir 
                 status.update(label=f"Lorvantis derin analizde... (Aşama: {attempt})", state="running")
                 
                 try:
-                    # Fotoğraf varsa veya yoksa soruyu Pollinations POST API'sine gönderip SADECE GERÇEK CEVABI almasını sağlıyoruz
                     system_prompt = "Sen Lorvantis'sin. Türkiye'nin en akıllı web yapay zekasısın. Kullanıcıya 'kanka' diye hitap et, samimi ol. Asla 'bilmiyorum' deme, webde arama yapıp en güncel ve en doğru bilgiyi uzun uzun, detaylıca açıkla."
                     
                     messages = [
@@ -119,7 +157,6 @@ if prompt := st.chat_input("Lorvantis'e bir soru sor veya görsel hakkında bir 
                         {"role": "user", "content": prompt}
                     ]
                     
-                    # Eğer görsel eklendiyse, Pollinations multimodal altyapısına uygun olarak resmi de iletiyoruz
                     if img_base64:
                         messages[1]["content"] = [
                             {"type": "text", "text": prompt},
@@ -128,7 +165,7 @@ if prompt := st.chat_input("Lorvantis'e bir soru sor veya görsel hakkında bir 
                     
                     payload = {
                         "messages": messages,
-                        "model": "searchgpt", # İnternette arama yapmaya odaklı model
+                        "model": "searchgpt", 
                         "search": True
                     }
                     
@@ -157,3 +194,19 @@ if prompt := st.chat_input("Lorvantis'e bir soru sor veya görsel hakkında bir 
 
         st.write(reply)
         st.session_state.chats[st.session_state.current_chat].append({"role": "assistant", "content": reply})
+
+# --- OTOMATİK EN AŞAĞI KAYDIRMA SİSTEMİ (JS) ---
+components.html(
+    """
+    <script>
+        const scroll = () => {
+            const root = window.parent.document.getElementById("root");
+            if (root) {
+                root.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }
+        };
+        setTimeout(scroll, 100);
+    </script>
+    """,
+    height=0,
+)
