@@ -23,11 +23,12 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
     st.chat_message("user").write(prompt)
 
     with st.chat_message("assistant"):
-        with st.status("Lorvantis webde köşe bucak arıyor...", expanded=True) as status:
+        # Hızlı ve seri arama modu
+        with st.status("Lorvantis hızlıca webde tarıyor...", expanded=True) as status:
             reply = ""
             handled_locally = False
 
-            # 1. Temel selamlaşmalar
+            # 1. Temel selamlaşmalar (Anında tepki)
             if lower_prompt in ["sa", "selam", "slm"]:
                 reply = "Aleykümselam kanka, nasılsın?"
                 handled_locally = True
@@ -41,24 +42,22 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                 reply = "Bir şey değil kanka!"
                 handled_locally = True
 
-            # 2. Asla pes etmeyen, yedek metne düşmeyen, OpenAI altyapılı gerçek arama motoru
+            # 2. Hızlandırılmış OpenAI / Pollinations web motoru
             if not handled_locally:
                 success = False
                 attempt = 0
                 
-                while not success:
+                while not success and attempt < 5:  # Maksimum denemeyi optimize ettik
                     attempt += 1
-                    status.update(label=f"Lorvantis arıyor... (Deneme: {attempt})", state="running")
+                    status.update(label=f"Lorvantis tarıyor... (Hızlı Deneme: {attempt})", state="running")
                     
                     try:
                         system_prompt = (
-                            "Sen Lorvantisin. Türkiye'nin web destekli en akıllı, inatçı ve güncel yapay zekasısın. "
-                            "Kullanıcının sorduğu sorunun (Can Uzun kimdir, futbolcular, şehirler, takımlar vb.) cevabını internetten tam ve eksiksiz bul. "
-                            "Asla hazır şablon veya yedek metin kullanma. Cevabı bulana kadar aratmaya devam et. "
-                            "Kullanıcıya her zaman samimi, kanka diliyle, net, doyurucu ve doğrudan cevaplar ver."
+                            "Sen Lorvantisin. Türkiye'nin web destekli en hızlı ve akıllı yapay zekasısın. "
+                            "Kullanıcının sorduğu sorunun cevabını internetten en kısa sürede ve eksiksiz bul. "
+                            "Kullanıcıya her zaman samimi, kanka diliyle, net ve doyurucu cevaplar ver."
                         )
                         
-                        # Pollinations'ın OpenAI model uç noktasını kullanarak doğrudan web destekli gerçek yanıt alıyoruz
                         payload = {
                             "model": "openai",
                             "messages": [
@@ -79,7 +78,8 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                             method='POST'
                         )
                         
-                        with urllib.request.urlopen(req, timeout=30) as response:
+                        # Süreyi dengeli tutarak hızlı yanıt alıyoruz
+                        with urllib.request.urlopen(req, timeout=12) as response:
                             if response.getcode() == 200:
                                 result_text = response.read().decode('utf-8').strip()
                                 if result_text and len(result_text) > 5 and "402" not in result_text:
@@ -87,10 +87,14 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                                     success = True
                                     break
                     except Exception:
-                        time.sleep(1.5)
+                        time.sleep(0.5) # Bekleme süresini yarı yarıya düşürdük
                         continue
+                
+                # Eğer nadir bir yoğunluk olursa hızlı yedek
+                if not success:
+                    reply = f"Kanka **'{cleaned_prompt}'** için sunuculardan anlık dönüş alamadık ama hızımızı kestik sanma! Tekrar yazarsan hemen kapıp getiririm. 🚀"
 
-            status.update(label="Lorvantis cevabı buldu!", state="complete", expanded=False)
+            status.update(label="Lorvantis cıt diye getirdi!", state="complete", expanded=False)
 
         st.write(reply)
         st.session_state.messages.append({"role": "assistant", "content": reply})
