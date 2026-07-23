@@ -1,15 +1,13 @@
 import streamlit as st
-import urllib.request
-import urllib.parse
+import requests
 import json
-import time
 import base64
 import streamlit.components.v1 as components
 
 # Sayfa ayarları
 st.set_page_config(page_title="Lorvantis AI", page_icon="🤖", layout="centered")
 
-# --- CSS: MESAJ BARI DÜZENLEMELERİ ---
+# --- CSS: MESAJ BARI VE ARAYÜZ DÜZENLEMELERİ ---
 st.markdown("""
     <style>
         [data-testid="stChatInput"] {
@@ -173,57 +171,60 @@ if prompt := st.chat_input("Lorvantis'e yaz..."):
             reply = ""
             success = False
             
-            # --- 1. SELAMLAŞMA VE TEŞEKKÜR KONTROLÜ ---
-            lower_prompt = prompt.lower().strip()
-            greetings = ["selam", "slm", "merhaba", "mrb", "selamın aleyküm", "selamun aleyküm", "sa"]
-            thanks = ["tşk", "teşekkürler", "teşekkür ederim", "sağol", "sagol", "teşekkür"]
+            # --- 1. AKILLI YEREL SELAMLAŞMA VE TEŞEKKÜR KONTROLÜ ---
+            clean_prompt = prompt.lower().strip(".,!?")
+            greetings = ["selam", "slm", "merhaba", "mrb", "selamın aleyküm", "selamun aleyküm", "sa", "aleykümselam"]
+            thanks = ["tşk", "teşekkürler", "teşekkür ederim", "sağol", "sagol", "teşekkür", "eyvallah"]
             
             if not img_b64_to_send:
-                if lower_prompt in greetings:
+                if clean_prompt in greetings:
                     reply = "Aleykümselam kanka, hoş geldin! Nasılsın, ne var ne yok, nasıl yardımcı olabilirim?"
                     success = True
-                elif lower_prompt in thanks:
+                elif clean_prompt in thanks:
                     reply = "Rica ederim kanka, ne demek! Başka bir sorun varsa buradayım."
                     success = True
             
-            # --- 2. HIZLI API BAĞLANTISI ---
+            # --- 2. ÇOKLU MODEL YEDEKLEME ZİNCİRİ (KESİNTİSİZ BAĞLANTI) ---
             if not success:
-                try:
-                    if img_b64_to_send:
-                        payload = {
-                            "messages": [
-                                {"role": "system", "content": "Sen Lorvantis'sin. Kullanıcıya 'kanka' de. Bu görseli ve soruyu analiz edip en doğru ve detaylı cevabı ver."},
-                                {"role": "user", "content": [
-                                    {"type": "text", "text": prompt},
-                                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64_to_send}"}}
-                                ]}
-                            ],
-                            "model": "openai"
-                        }
-                        req = urllib.request.Request(
-                            "https://text.pollinations.ai/",
-                            data=json.dumps(payload).encode('utf-8'),
-                            headers={'Content-Type': 'application/json'}
-                        )
-                    else:
-                        safe_prompt = urllib.parse.quote(f"Sen Lorvantis'sin. Kullanıcıya 'kanka' de ve şu soruya detaylı cevap ver: {prompt}")
-                        req = urllib.request.Request(
-                            f"https://text.pollinations.ai/{safe_prompt}?model=openai",
-                            headers={'User-Agent': 'Mozilla/5.0'}
-                        )
-                    
-                    with urllib.request.urlopen(req, timeout=12) as response:
-                        if response.getcode() == 200:
-                            result = response.read().decode('utf-8').strip()
-                            if len(result) > 2:
+                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+                models_to_try = ["openai", "mistral", "llama"]
+                
+                for model in models_to_try:
+                    try:
+                        if img_b64_to_send:
+                            payload = {
+                                "messages": [
+                                    {"role": "system", "content": "Sen Lorvantis'sin. Türkiye’nin web yapay zekasısın. Kullanıcıya 'kanka' de. Bu görseli ve soruyu analiz edip en doğru ve detaylı cevabı ver."},
+                                    {"role": "user", "content": [
+                                        {"type": "text", "text": prompt},
+                                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64_to_send}"}}
+                                    ]}
+                                ],
+                                "model": model
+                            }
+                        else:
+                            payload = {
+                                "messages": [
+                                    {"role": "system", "content": "Sen Lorvantis'sin. Türkiye’nin web yapay zekasısın. Kullanıcıya 'kanka' de ve soruya detaylı, akıcı, web destekli cevap ver."},
+                                    {"role": "user", "content": prompt}
+                                ],
+                                "model": model
+                            }
+                        
+                        res = requests.post("https://text.pollinations.ai/", json=payload, headers=headers, timeout=10)
+                        
+                        if res.status_code == 200:
+                            result = res.text.strip()
+                            if result and len(result) > 2:
                                 reply = result
                                 success = True
-                except Exception as e:
-                    pass
+                                break # Başarılı yanıt alındıysa döngüden çık
+                    except Exception:
+                        continue # Hata alırsan sıradaki modele geç
             
-            # --- 3. GÜVENLİ SONUÇ ---
+            # --- 3. SON SAVUNMA HATTI (ASLA BOŞ DÖNDürmez) ---
             if not success:
-                reply = "Kanka şu an sunucudan anlık veri alamadık ama bağlantıyı tazeledim. Soruyu bir kez daha gönderdiğinde hemen yakalayacağız! 🚀"
+                reply = f"Kanka şu an sunucular anlık yoğunluktan dolayı tıkandı ama ben buradayım! Sorduğun soruya ({prompt}) dair bağlantıyı tazeledim, hemen tekrar gönderirsen yakalayacağız! 🚀"
             
             status.update(label="Lorvantis çözdü!", state="complete", expanded=False)
 
