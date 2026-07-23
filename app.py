@@ -8,7 +8,7 @@ st.title("🤖 Lorvantis AI")
 st.caption("Türkiye’nin web yapay zekası")
 
 if "messages" not in st.session_state:
-    st.session_state["messages"] = [{"role": "assistant", "content": "Selam kanka! Türkiye'nin web yapay zekası sahneye döndü 😎 Dök içini 🔥"}]
+    st.session_state["messages"] = [{"role": "assistant", "content": "Selam kanka! Model derdini de bitirdik, sahne bizim 😎 Dök içini 🔥"}]
 
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
@@ -31,9 +31,9 @@ if prompt := st.chat_input("Lorvantis'e bir şeyler yaz..."):
                 for m in st.session_state.messages[-10:]:
                     messages_payload.append({"role": m["role"], "content": m["content"]})
                 
+                # Model parametresini sildik, API kendi varsayılanını kullansın 404 yemesin:
                 payload = json.dumps({
                     "messages": messages_payload,
-                    "model": "llama",
                     "jsonMode": False
                 }).encode('utf-8')
                 
