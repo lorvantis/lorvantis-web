@@ -2,10 +2,10 @@ import streamlit as st
 import requests
 import json
 import base64
+import time
 import streamlit.components.v1 as components
 
 # --- GİZLİ API HAVUZU ---
-# Senin attığın 4 anahtarı buraya sabitledik kanka, sen artık uğraşmayacaksın.
 API_KEYS = [
     "AQ.Ab8RN6JnfkCFFuZ2b3Mzk2x7ftsjbZA_nYKiAmLAJ4dWiRmxOA",
     "AQ.Ab8RN6KbI1u8UKIsaQ9u9IOFbSJMPMXzupQ8jmP8vE8ZSBOHFw",
@@ -61,7 +61,7 @@ st.markdown("""
 
 # --- OTURUM VE HAFIZA YÖNETİMİ ---
 if "chats" not in st.session_state:
-    st.session_state.chats = {"Varsayılan Sohbet": [{"role": "assistant", "content": "Selam kanka! Ameliyat bitti, fişek gibiyim. Ne kaynatıyoruz bugün?"}]}
+    st.session_state.chats = {"Varsayılan Sohbet": [{"role": "assistant", "content": "Selam kanka! Lorvantis hazır, anlat bakalım!"}]}
 if "current_chat" not in st.session_state:
     st.session_state.current_chat = "Varsayılan Sohbet"
 if "temp_image" not in st.session_state:
@@ -74,13 +74,13 @@ if "uploader_key" not in st.session_state:
 def encode_image(image_bytes):
     return base64.b64encode(image_bytes).decode('utf-8')
 
-# --- YAN MENÜ: SOHBET YÖNETİMİ (API KUTUSU KALDIRILDI) ---
+# --- YAN MENÜ: SOHBET YÖNETİMİ ---
 with st.sidebar:
     st.title("🗂️ Sohbetler")
     new_chat = st.text_input("Yeni Sohbet Adı:")
     if st.button("➕ Sohbet Başlat"):
         if new_chat and new_chat not in st.session_state.chats:
-            st.session_state.chats[new_chat] = [{"role": "assistant", "content": f"Selam kanka! {new_chat} konusundayız, anlat bakalım."}]
+            st.session_state.chats[new_chat] = [{"role": "assistant", "content": f"Selam kanka! {new_chat} konusundayız, dinliyorum."}]
             st.session_state.current_chat = new_chat
             st.rerun()
             
@@ -151,22 +151,23 @@ if st.session_state.temp_image:
             st.session_state.uploader_key += 1
             st.rerun()
 
+# Yalnızca hazırda bir görsel varsa ve henüz gönderilmediyse köşede göster
 if st.session_state.ready_image:
     b64_img = encode_image(st.session_state.ready_image)
     st.markdown(f'<img src="data:image/jpeg;base64,{b64_img}" class="img-thumbnail">', unsafe_allow_html=True)
 
-# --- SOHBET VE SESSİZ FAILOVER MOTORU ---
+# --- SOHBET VE GÜÇLENDİRİLMİŞ DÖNGÜ MOTORU ---
 if prompt := st.chat_input("Lorvantis'e yaz..."):
     user_display = prompt
     img_b64 = None
     
+    # Görsel varsa al ve işin bitince sessizce hafızadan temizle
     if st.session_state.ready_image:
         user_display = f"🖼️ [Görsel] {prompt}"
         img_b64 = encode_image(st.session_state.ready_image)
-        st.session_state.ready_image = None 
+        st.session_state.ready_image = None  # Köşedeki resim resmi olarak temizlendi
         
     st.session_state.chats[st.session_state.current_chat].append({"role": "user", "content": user_display})
-    st.chat_message("user").write(user_display)
 
     with st.chat_message("assistant"):
         with st.status("Lorvantis düşünüyor...", expanded=False) as status:
@@ -184,13 +185,13 @@ if prompt := st.chat_input("Lorvantis'e yaz..."):
 
             payload = {
                 "system_instruction": {
-                    "parts": [{"text": "Sen Lorvantis'sin. Türkiye'nin samimi web yapay zekasısın. Kullanıcıya her zaman 'kanka' diye hitap et. Çok samimi, kafa dengi, detaylı, akıcı ve eğlenceli cevaplar ver. Arkandaki altyapı Google Gemini'dir. Hikaye istendiğinde harika hikayeler kurgula."}]
+                    "parts": [{"text": "Sen Lorvantis'sin. Türkiye'nin samimi web yapay zekasısın. Kullanıcıya her zaman 'kanka' diye hitap et. Çok samimi, kafa dengi, detaylı, akıcı ve eğlenceli cevaplar ver. Hikaye istendiğinde harika hikayeler kurgula."}]
                 },
                 "contents": [{"role": "user", "parts": parts}]
             }
             headers = {'Content-Type': 'application/json'}
             
-            # --- SESSİZ DÖNGÜ: Gömdüğümüz 4 anahtarı tek tek dener ---
+            # Rotasyonlu ve 1 sn gecikmeli Akıllı Hata Önleyici Döngü
             for key in API_KEYS:
                 try:
                     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={key}"
@@ -200,17 +201,20 @@ if prompt := st.chat_input("Lorvantis'e yaz..."):
                         data = res.json()
                         reply = data["candidates"][0]["content"]["parts"][0]["text"].strip()
                         success = True
-                        break # Başarılı olduysa diğer anahtarlara geçmeye gerek yok, döngüden çık
+                        break
+                    else:
+                        time.sleep(1) # Hata aldıysa diğer key'e geçmeden 1 sn bekle
                 except Exception:
-                    continue # Hata alırsan (429 vs.) sessiz kal, sıradaki anahtara geç!
+                    time.sleep(1)
+                    continue
             
             if not success:
-                reply = "Kanka inanılmaz bir hızla yazdın, havuzdaki 4 anahtar da anlık molada! 1 dakika nefes aldırıp tekrar yazarsan akmaya devam edeceğiz."
+                reply = "Kanka havuzdaki tüm anahtarlar anlık yoğunlukta. Birkaç saniye sonra tekrar yazarsan hemen yanıtlayacağım!"
             
             status.update(label="Hazır!", state="complete", expanded=False)
 
-        st.write(reply)
-        st.session_state.chats[st.session_state.current_chat].append({"role": "assistant", "content": reply})
+    st.session_state.chats[st.session_state.current_chat].append({"role": "assistant", "content": reply})
+    st.rerun() # Sayfayı yenileyerek görselin ekrandan ve köşeden tamamen silinmesini sağlar
 
 # OTO KAYDIRMA
 components.html(
