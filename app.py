@@ -5,7 +5,6 @@ import base64
 import streamlit.components.v1 as components
 
 # --- GİZLİ API HAVUZU ---
-# Senin attığın 4 anahtarı buraya sabitledik kanka, sen artık uğraşmayacaksın.
 API_KEYS = [
     "AQ.Ab8RN6JnfkCFFuZ2b3Mzk2x7ftsjbZA_nYKiAmLAJ4dWiRmxOA",
     "AQ.Ab8RN6KbI1u8UKIsaQ9u9IOFbSJMPMXzupQ8jmP8vE8ZSBOHFw",
@@ -118,7 +117,7 @@ with col_menu:
             st.session_state.chats[st.session_state.current_chat] = [{"role": "assistant", "content": "Sohbet temizlendi kanka, dinliyorum."}]
             st.rerun()
 
-# --- GEÇMİŞİ EKRANA BASMA (API HATASINI ÖNLEYEN FORMAT) ---
+# --- GEÇMİŞİ EKRANA BASMA ---
 for msg in st.session_state.chats[st.session_state.current_chat]:
     st.chat_message(msg["role"]).write(msg["content"])
 
@@ -173,19 +172,20 @@ if prompt := st.chat_input("Lorvantis'e yaz..."):
             reply = ""
             success = False
             
-            # --- API UYUMLU İÇERİK DÖNÜŞÜMÜ ---
-            # Google API'nin beklediği "user" ve "model" rollerine göre geçmişi dönüştürüyoruz
             contents = []
             chat_history = st.session_state.chats[st.session_state.current_chat]
             
-            for m in chat_history[:-1]: # Son eklenen hariç geçmiş mesajlar
+            for m in chat_history[:-1]:
                 role = "user" if m["role"] == "user" else "model"
+                clean_text = str(m["content"])
+                if clean_text.startswith("🖼️ [Görsel] "):
+                    clean_text = clean_text.replace("🖼️ [Görsel] ", "", 1)
+                
                 contents.append({
                     "role": role,
-                    "parts": [{"text": str(m["content"])}]
+                    "parts": [{"text": clean_text}]
                 })
             
-            # Güncel mesaj parçaları
             current_parts = [{"text": prompt}]
             if img_b64:
                 current_parts.append({
@@ -208,7 +208,6 @@ if prompt := st.chat_input("Lorvantis'e yaz..."):
             }
             headers = {'Content-Type': 'application/json'}
             
-            # --- SESSİZ DÖNGÜ: Gömdüğümüz 4 anahtarı tek tek dener ---
             for key in API_KEYS:
                 try:
                     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={key}"
@@ -218,9 +217,9 @@ if prompt := st.chat_input("Lorvantis'e yaz..."):
                         data = res.json()
                         reply = data["candidates"][0]["content"]["parts"][0]["text"].strip()
                         success = True
-                        break # Başarılı olduysa döngüden çık
+                        break 
                 except Exception:
-                    continue # Hata alırsan sessiz kal, sıradaki anahtara geç!
+                    continue 
             
             if not success:
                 reply = "Kanka inanılmaz bir hızla yazdın, havuzdaki 4 anahtar da anlık molada! 1 dakika nefes aldırıp tekrar yazarsan akmaya devam edeceğiz."
