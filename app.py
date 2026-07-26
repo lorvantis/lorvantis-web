@@ -171,11 +171,13 @@ if prompt := st.chat_input("Lorvantis'e yaz..."):
         with st.status("Lorvantis düşünüyor...", expanded=False) as status:
             reply = ""
             success = False
+            last_error = ""
             
             contents = []
             chat_history = st.session_state.chats[st.session_state.current_chat]
             
             for m in chat_history[:-1]:
+                # Google API standartlarında roller 'user' ve 'model' olmalıdır
                 role = "user" if m["role"] == "user" else "model"
                 clean_text = str(m["content"])
                 if clean_text.startswith("🖼️ [Görsel] "):
@@ -215,14 +217,18 @@ if prompt := st.chat_input("Lorvantis'e yaz..."):
                     
                     if res.status_code == 200:
                         data = res.json()
-                        reply = data["candidates"][0]["content"]["parts"][0]["text"].strip()
-                        success = True
-                        break 
-                except Exception:
+                        if "candidates" in data and len(data["candidates"]) > 0:
+                            reply = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                            success = True
+                            break 
+                    else:
+                        last_error = res.text
+                except Exception as e:
+                    last_error = str(e)
                     continue 
             
             if not success:
-                reply = "Kanka inanılmaz bir hızla yazdın, havuzdaki 4 anahtar da anlık molada! 1 dakika nefes aldırıp tekrar yazarsan akmaya devam edeceğiz."
+                reply = f"Kanka API bağlantısında takıldık (Hata detayı: {last_error[:100]}). Anahtarları veya isteği kontrol edelim."
             
             status.update(label="Hazır!", state="complete", expanded=False)
 
