@@ -1,249 +1,147 @@
-import streamlit as st
+import customtkinter as ctk
 import requests
 import json
-import base64
-import streamlit.components.v1 as components
+import threading
 
-# --- GİZLİ API HAVUZU ---
-API_KEYS = [
-    "AQ.Ab8RN6JnfkCFFuZ2b3Mzk2x7ftsjbZA_nYKiAmLAJ4dWiRmxOA",
-    "AQ.Ab8RN6KbI1u8UKIsaQ9u9IOFbSJMPMXzupQ8jmP8vE8ZSBOHFw",
-    "AQ.Ab8RN6LMoSnq5Cc1-Axu8PudsUEBDDdVaMD8xj69wEv4tIzz3A",
-    "AQ.Ab8RN6I0Yb-r1EbIUo9c4pj3_8Yx-rXIaqQaCV06DuE4u47KVw"
-]
+# Tema Ayarları (Tamamen Kapkara)
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme("dark-blue")
 
-# Sayfa Yapılandırması
-st.set_page_config(page_title="Lorvantis AI", page_icon="🤖", layout="centered")
+class LorvantisApp(ctk.CTk):
+    def __init__(self):
+        super().__init__()
 
-# --- CSS: ARAYÜZ VE GÖRSEL DÜZENLEMELER ---
-st.markdown("""
-    <style>
-        [data-testid="stChatInput"] {
-            padding-left: 3rem !important;
-        }
-        div[data-testid="stPopover"] {
-            position: fixed;
-            bottom: 2rem;
-            left: 1.5rem;
-            z-index: 99999;
-        }
-        @media (max-width: 768px) {
-            div[data-testid="stPopover"] {
-                bottom: 1.5rem;
-                left: 1rem;
-            }
-        }
-        div[data-testid="stPopover"] button {
-            border-radius: 50%;
-            padding: 0.5rem;
-            width: 40px;
-            height: 40px;
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .img-thumbnail {
-            position: fixed;
-            bottom: 5rem;
-            left: 2rem;
-            width: 60px;
-            height: 60px;
-            border-radius: 8px;
-            border: 2px solid #4CAF50;
-            object-fit: cover;
-            z-index: 99998;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-    </style>
-""", unsafe_allow_html=True)
+        self.title("Lorvantis")
+        self.geometry("450x650")
+        self.configure(fg_color="#000000")
 
-# --- OTURUM VE HAFIZA YÖNETİMİ ---
-if "chats" not in st.session_state:
-    st.session_state.chats = {"Varsayılan Sohbet": [{"role": "assistant", "content": "Selam kanka! Ameliyat bitti, fişek gibiyim. Ne kaynatıyoruz bugün?"}]}
-if "current_chat" not in st.session_state:
-    st.session_state.current_chat = "Varsayılan Sohbet"
-if "temp_image" not in st.session_state:
-    st.session_state.temp_image = None
-if "ready_image" not in st.session_state:
-    st.session_state.ready_image = None
-if "uploader_key" not in st.session_state:
-    st.session_state.uploader_key = 1
+        # --- ÜST BAR (Header) ---
+        self.top_frame = ctk.CTkFrame(self, fg_color="#000000", height=50)
+        self.top_frame.pack(fill="x", side="top", padx=10, pady=5)
 
-def encode_image(image_bytes):
-    return base64.b64encode(image_bytes).decode('utf-8')
+        self.menu_btn = ctk.CTkButton(
+            self.top_frame, text="=", width=40, height=40, 
+            font=("Arial", 24, "bold"), fg_color="transparent", 
+            hover_color="#1a1a1a", text_color="white", command=self.toggle_drawer
+        )
+        self.menu_btn.pack(side="left")
 
-# --- YAN MENÜ: SOHBET YÖNETİMİ ---
-with st.sidebar:
-    st.title("🗂️ Sohbetler")
-    new_chat = st.text_input("Yeni Sohbet Adı:")
-    if st.button("➕ Sohbet Başlat"):
-        if new_chat and new_chat not in st.session_state.chats:
-            st.session_state.chats[new_chat] = [{"role": "assistant", "content": f"Selam kanka! {new_chat} konusundayız, anlat bakalım."}]
-            st.session_state.current_chat = new_chat
-            st.rerun()
-            
-    st.markdown("---")
-    chats_to_delete = []
-    for chat_name in list(st.session_state.chats.keys()):
-        col1, col2 = st.columns([4, 1])
-        with col1:
-            if st.button(f"💬 {chat_name}", use_container_width=True, key=f"btn_{chat_name}"):
-                st.session_state.current_chat = chat_name
-                st.rerun()
-        with col2:
-            if st.button("❌", key=f"del_{chat_name}"):
-                chats_to_delete.append(chat_name)
-                
-    for chat_name in chats_to_delete:
-        del st.session_state.chats[chat_name]
-        if st.session_state.current_chat == chat_name:
-            if st.session_state.chats:
-                st.session_state.current_chat = list(st.session_state.chats.keys())[0]
-            else:
-                st.session_state.chats = {"Yeni Sohbet": [{"role": "assistant", "content": "Sıfırdan başladık kanka!"}]}
-                st.session_state.current_chat = "Yeni Sohbet"
-        st.rerun()
+        self.title_label = ctk.CTkLabel(
+            self.top_frame, text="LORVANTIS", 
+            font=("Arial", 16, "bold"), text_color="white"
+        )
+        self.title_label.pack(side="left", expand=True)
 
-# --- ÜST MENÜ ---
-col_title, col_menu = st.columns([8, 1])
-with col_title:
-    st.title("🤖 Lorvantis AI")
-    st.caption("Kesintisiz Gemini Motoru Aktif")
-with col_menu:
-    st.markdown("<br>", unsafe_allow_html=True)
-    with st.popover("⋮"):
-        if st.button("🗑️ Temizle", use_container_width=True):
-            st.session_state.chats[st.session_state.current_chat] = [{"role": "assistant", "content": "Sohbet temizlendi kanka, dinliyorum."}]
-            st.rerun()
+        self.settings_btn = ctk.CTkButton(
+            self.top_frame, text="...", width=40, height=40, 
+            font=("Arial", 20, "bold"), fg_color="transparent", 
+            hover_color="#1a1a1a", text_color="white", command=self.open_settings
+        )
+        self.settings_btn.pack(side="right")
 
-# --- GEÇMİŞİ EKRANA BASMA ---
-for msg in st.session_state.chats[st.session_state.current_chat]:
-    st.chat_message(msg["role"]).write(msg["content"])
+        # --- SOHBET ALANI ---
+        self.chat_area = ctk.CTkScrollableFrame(self, fg_color="#000000")
+        self.chat_area.pack(fill="both", expand=True, padx=10, pady=5)
 
-# --- FOTOĞRAF YÜKLEME ---
-with st.popover("➕"):
-    tab1, tab2 = st.tabs(["🖼️ Galeri", "📸 Kamera"])
-    with tab1:
-        uploaded_file = st.file_uploader("Seç", type=["png", "jpg", "jpeg"], key=f"up_{st.session_state.uploader_key}")
-        if uploaded_file:
-            st.session_state.temp_image = uploaded_file.getvalue()
-    with tab2:
-        camera_file = st.camera_input("Çek", key=f"cam_{st.session_state.uploader_key}")
-        if camera_file:
-            st.session_state.temp_image = camera_file.getvalue()
+        # --- ALT MESAJ BARI ---
+        self.bottom_frame = ctk.CTkFrame(self, fg_color="#000000")
+        self.bottom_frame.pack(fill="x", side="bottom", padx=15, pady=15)
 
-if st.session_state.temp_image:
-    st.markdown("---")
-    st.info("📷 Görsel hazır!")
-    st.image(st.session_state.temp_image, width=200)
-    col_iptal, col_yolla = st.columns(2)
-    with col_iptal:
-        if st.button("❌ İptal", use_container_width=True):
-            st.session_state.temp_image = None
-            st.session_state.uploader_key += 1 
-            st.rerun()
-    with col_yolla:
-        if st.button("✅ Gönder", use_container_width=True):
-            st.session_state.ready_image = st.session_state.temp_image
-            st.session_state.temp_image = None
-            st.session_state.uploader_key += 1
-            st.rerun()
+        self.entry = ctk.CTkEntry(
+            self.bottom_frame, placeholder_text="Mesaj yazın...",
+            height=50, corner_radius=25, fg_color="#121212", 
+            border_color="#2a2a2a", text_color="white", 
+            placeholder_text_color="#666666", font=("Arial", 14)
+        )
+        self.entry.pack(fill="x", side="left", expand=True, padx=(0, 10))
+        self.entry.bind("<Return>", lambda event: self.send_message())
 
-if st.session_state.ready_image:
-    b64_img = encode_image(st.session_state.ready_image)
-    st.markdown(f'<img src="data:image/jpeg;base64,{b64_img}" class="img-thumbnail">', unsafe_allow_html=True)
+        self.send_btn = ctk.CTkButton(
+            self.bottom_frame, text="➔", width=50, height=50, 
+            corner_radius=25, fg_color="#222222", hover_color="#333333",
+            text_color="white", font=("Arial", 16, "bold"), command=self.send_message
+        )
+        self.send_btn.pack(side="right")
 
-# --- SOHBET VE SESSİZ FAILOVER MOTORU ---
-if prompt := st.chat_input("Lorvantis'e yaz..."):
-    user_display = prompt
-    img_b64 = None  # Güvenli tanımlama
-    
-    if st.session_state.ready_image:
-        user_display = f"🖼️ [Görsel] {prompt}"
-        img_b64 = encode_image(st.session_state.ready_image)
-        st.session_state.ready_image = None 
+    def toggle_drawer(self):
+        drawer = ctk.CTkToplevel(self)
+        drawer.title("Sohbet Geçmişi")
+        drawer.geometry("250x400")
+        drawer.configure(fg_color="#0a0a0a")
         
-    st.session_state.chats[st.session_state.current_chat].append({"role": "user", "content": user_display})
-    st.chat_message("user").write(user_display)
+        lbl = ctk.CTkLabel(drawer, text="Sohbet Geçmişi", font=("Arial", 16, "bold"))
+        lbl.pack(pady=15)
 
-    with st.chat_message("assistant"):
-        with st.status("Lorvantis düşünüyor...", expanded=False) as status:
-            reply = ""
-            success = False
-            last_error = ""
-            
-            contents = []
-            chat_history = st.session_state.chats[st.session_state.current_chat]
-            
-            for m in chat_history[:-1]:
-                role = "user" if m["role"] == "user" else "model"
-                clean_text = str(m["content"])
-                if clean_text.startswith("🖼️ [Görsel] "):
-                    clean_text = clean_text.replace("🖼️ [Görsel] ", "", 1)
-                
-                contents.append({
-                    "role": role,
-                    "parts": [{"text": clean_text}]
-                })
-            
-            current_parts = [{"text": prompt}]
-            if img_b64:
-                current_parts.append({
-                    "inline_data": {
-                        "mime_type": "image/jpeg",
-                        "data": img_b64
-                    }
-                })
-            
-            contents.append({
-                "role": "user",
-                "parts": current_parts
-            })
+    def open_settings(self):
+        settings = ctk.CTkToplevel(self)
+        settings.title("Ayarlar")
+        settings.geometry("300x250")
+        settings.configure(fg_color="#0a0a0a")
+
+        lbl = ctk.CTkLabel(settings, text="Hesap Ayarları", font=("Arial", 16, "bold"))
+        lbl.pack(pady=10)
+
+    def send_message(self):
+        user_text = self.entry.get().strip()
+        if not user_text:
+            return
+
+        self.add_message(user_text, is_user=True)
+        self.entry.delete(0, "end")
+
+        threading.Thread(target=self.get_ai_response, args=(user_text,)).start()
+
+    def add_message(self, text, is_user=False):
+        msg_frame = ctk.CTkFrame(
+            self.chat_area, 
+            fg_color="#1f1f1f" if is_user else "#101010",
+            corner_radius=15
+        )
+        msg_frame.pack(
+            anchor="e" if is_user else "w", 
+            pady=5, padx=5, fill="x"
+        )
+
+        sender = "Sen: " if is_user else "Lorvantis: "
+        msg_label = ctk.CTkLabel(
+            msg_frame, text=sender + text, text_color="white", 
+            wraplength=350, justify="left", font=("Arial", 13)
+        )
+        msg_label.pack(padx=12, pady=8, anchor="w")
+
+    def get_ai_response(self, prompt):
+        try:
+            # Akıllı uzunluk ayarı için güncellenmiş yönlendirme
+            full_prompt = (
+                "Senin adın Lorvantis. Samimi, kanka tarzında ve akıllı bir Türkçe yapay zekasın. "
+                "Cevap uzunluğunu kullanıcının sorusuna göre ayarla: Basit selamlaşma veya tek kelimelik sorularda "
+                "kısa ve öz cevap ver. Teknik anlatım, rehber veya detay gerektiren sorularda ise uydurmadan "
+                "güncel bilgilerle detaylı ve uzun açıkla.\n\n"
+                f"Kullanıcı: {prompt}\n"
+                "Lorvantis:"
+            )
 
             payload = {
-                "system_instruction": {
-                    "parts": [{"text": "Sen Lorvantis'sin. Türkiye'nin samimi web yapay zekasısın. Kullanıcıya her zaman 'kanka' diye hitap et. Çok samimi, kafa dengi, detaylı, akıcı ve eğlenceli cevaplar ver. Arkandaki altyapı Google Gemini'dir. Hikaye istendiğinde harika hikayeler kurgula."}]
-                },
-                "contents": contents
+                "model": "llama3.2",
+                "prompt": full_prompt,
+                "stream": False,
+                "options": {
+                    "temperature": 0.3, # Mantıklı yanıtlar vermesi için
+                    "num_predict": 500  # Gerektiğinde uzun yazabilmesi için alan bırakıyoruz
+                }
             }
-            headers = {'Content-Type': 'application/json'}
             
-            for key in API_KEYS:
-                try:
-                    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={key}"
-                    res = requests.post(url, headers=headers, data=json.dumps(payload), timeout=20)
-                    
-                    if res.status_code == 200:
-                        data = res.json()
-                        if "candidates" in data and len(data["candidates"]) > 0:
-                            reply = data["candidates"][0]["content"]["parts"][0]["text"].strip()
-                            success = True
-                            break 
-                    else:
-                        last_error = res.text
-                except Exception as e:
-                    last_error = str(e)
-                    continue 
+            response = requests.post("http://localhost:11434/api/generate", json=payload)
             
-            if not success:
-                reply = f"Kanka API bağlantısında takıldık (Hata detayı: {last_error[:100]}). Anahtarları veya isteği kontrol edelim."
-            
-            status.update(label="Hazır!", state="complete", expanded=False)
+            if response.status_code == 200:
+                answer = response.json().get("response", "Cevap yok kanka.").strip()
+            else:
+                answer = "Ollama kapalı veya sorun var kanka."
+        except Exception as e:
+            answer = "Ollama kapalı, çalışmıyor kanka."
 
-        st.write(reply)
-        st.session_state.chats[st.session_state.current_chat].append({"role": "assistant", "content": reply})
+        self.add_message(answer, is_user=False)
 
-# OTO KAYDIRMA
-components.html(
-    """
-    <script>
-        const scroll = () => {
-            const root = window.parent.document.getElementById("root");
-            if (root) { root.scrollIntoView({ behavior: 'smooth', block: 'end' }); }
-        };
-        setTimeout(scroll, 100);
-    </script>
-    """,
-    height=0,
-)
+if __name__ == "__main__":
+    app = LorvantisApp()
+    app.mainloop()
