@@ -31,7 +31,7 @@ def kailer_profesyonel_motor(sorgu):
 
     # Futbol, Fenerbahçe ve spor analizleri
     if "fenerbahçe" in s or "futbol" in s or "maç" in s or "squad" in s or "fener" in s:
-        return f"Kanka '{sorgu' analizini inceledik: Kulüp tarihleri, transfer, squad yapılanmaları, taktiksel dizilişler ve güncel performans verileri profesyonel düzeyde bu kapsamdadır. Ekibe sunmak istediğin özel bir maç taktiği veya oyuncu analizi var mı?"
+        return f"Kanka '{sorgu}' analizini inceledik: Kulüp tarihleri, transfer, squad yapılanmaları, taktiksel dizilişler ve güncel performans verileri profesyonel düzeyde bu kapsamdadır. Ekibe sunmak istediğin özel bir maç taktiği veya oyuncu analizi var mı?"
 
     # Giyim, ayakkabı, çorap ve imalat detayları (İpten çoraba her şey)
     if "ayakkabı" in s or "çorap" in s or "elbise" in s or "giyim" in s or "ip" in s or "kumaş" in s:
