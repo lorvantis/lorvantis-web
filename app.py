@@ -3,76 +3,71 @@ import urllib.request
 import urllib.parse
 import json
 import html
+import re
 
 st.set_page_config(page_title="Kailer AI", page_icon="🤖")
 
 st.title("🤖 Kailer AI")
-st.caption("64 Kişilik Ekip İçin Profesyonel Toparlayıcı Arama Motoru")
+st.caption("64 Kişilik Ekip İçin Net ve Temiz Bilgi Motoru")
 
 if "messages" not in st.session_state:
-    st.session_state["messages"] = [{"role": "assistant", "content": "Kailer AI aktif. Neyi merak ediyorsan yaz kanka, web'i tarayıp tertemiz önüne getireyim?"}]
+    st.session_state["messages"] = [{"role": "assistant", "content": "Kailer AI aktif. Neyi merak ediyorsan yaz kanka, net bilgiyi çekip önüne koyayım?"}]
 
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
 
-def duzgun_web_aramasi(sorgu):
+def net_bilgi_getir(sorgu):
     s = sorgu.lower().strip()
     
     # Sohbetler
     if s in ["sa", "selam", "selamun aleykum", "selamın aleyküm", "merhaba", "hey"]:
-        return "Aleykümselam kanka! 64 kişilik ekip için sistemler tam gaz ayakta, ne arıyoruz?"
+        return "Aleykümselam kanka! Sistemler tam gaz ayakta, ne arıyoruz?"
     elif s in ["nasılsın", "naber", "ne var ne yok", "nasılsın?", "iyi misin"]:
-        return "Bombaneyim kanka, arama motoru gibi fişek gibiyim! Sen nasılsın?"
+        return "Bombaneyim kanka, fişek gibiyim! Sen nasılsın?"
     elif s in ["adın ne", "kimsin", "sen kimsin"]:
-        return "Ben Kailer AI kanka! Ekibin için web'i anlık tarayan ve bilgiyi derleyen profesyonel yapay zeka sistemiyim."
+        return "Ben Kailer AI kanka! Ekibin için web'i anlık tarayan ve bilgiyi tertemiz derleyen sistemiyim."
 
     try:
-        # DuckDuckGo üzerinden arama
-        url = f"https://api.duckduckgo.com/?q={urllib.parse.quote(sorgu)}&format=json&no_html=1&skip_disambig=1"
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+        # Doğrudan Türkçe Wikipedia Özet (Summary) API'si - Çöp metinleri ve tarihleri asla almaz
+        wiki_api_url = f"https://tr.wikipedia.org/api/rest_v1/page/summary/{urllib.parse.quote(sorgu)}"
+        req = urllib.request.Request(wiki_api_url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
         
-        parcalar = []
         with urllib.request.urlopen(req, timeout=10) as response:
             data = json.loads(response.read().decode('utf-8'))
-            
-            if data.get("AbstractText"):
-                parcalar.append(html.unescape(data["AbstractText"]))
+            if data.get("type") != "disambiguation" and data.get("extract"):
+                baslik = data.get("title", "Bilgi")
+                ozet = data.get("extract")
+                return f"**{baslik}**\n\n{ozet}"
                 
-            if data.get("RelatedTopics"):
-                for topic in data["RelatedTopics"]:
-                    if isinstance(topic, dict) and "Text" in topic and topic["Text"]:
-                        parcalar.append(html.unescape(topic["Text"]))
-                        
-        if parcalar:
-            temiz_ozet = "\n\n".join(parcalar[:2])
-            return f"Kanka aradığın konu için web'den derlediğim net bilgiler:\n\n{temiz_ozet}"
-            
-        # Wikipedia Destekli Canlı Arama ve Derleme
-        wiki_url = f"https://tr.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(sorgu)}&format=json"
-        wiki_req = urllib.request.Request(wiki_url, headers={'User-Agent': 'Mozilla/5.0'})
+        # Alternatif Wikipedia Arama ve Temizleme
+        search_url = f"https://tr.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(sorgu)}&format=json"
+        s_req = urllib.request.Request(search_url, headers={'User-Agent': 'Mozilla/5.0'})
         
-        with urllib.request.urlopen(wiki_req, timeout=10) as w_resp:
-            w_data = json.loads(w_resp.read().decode('utf-8'))
-            search_results = w_data.get("query", {}).get("search", [])
+        with urllib.request.urlopen(s_req, timeout=10) as s_resp:
+            s_data = json.loads(s_resp.read().decode('utf-8'))
+            results = s_data.get("query", {}).get("search", [])
             
-            if search_results:
-                ilk_sonuc = search_results[0]
-                baslik = ilk_sonuc.get("title", "")
-                snippet = html.unescape(ilk_sonuc.get("snippet", "").replace('<span class="searchmatch">', '').replace('</span>', ''))
-                return f"Kanka ulaştığım güncel kaynak özeti ({baslik}):\n\n{snippet}..."
+            if results:
+                ilk = results[0]
+                baslik = ilk.get("title", "")
+                snippet = ilk.get("snippet", "")
+                # HTML etiketlerini ve çöp kalıntıları temizle
+                temiz_snippet = re.sub('<.*?>', '', snippet)
+                temiz_snippet = re.sub(r'Erişim tarihi:.*', '', temiz_snippet)
+                return f"**{baslik}**\n\n{temiz_snippet.strip()}..."
 
-        return "Kanka web taraması tamamlandı ancak anlamlı bir metin bloğu yakalanamadı. Kelimeyi biraz daha net yazarak tekrar deneyebilirsin!"
+        return "Kanka aradığın kelime için net bir kaynak bulunamadı. Lütfen kelimeyi tam yazarak tekrar dene!"
 
     except Exception as e:
-        return "Kanka arama sırasında anlık bir ağ dalgalanması oldu. Soruyu bir kez daha gönderirsen hemen veriyi çekeceğim!"
+        return "Kanka arama sırasında anlık bir ağ dalgalanması oldu. Soruyu bir kez daha gönderirsen hemen hallederim!"
 
 if prompt := st.chat_input("Kailer AI'da aratmak istediğin şeyi yaz..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("Kailer AI verileri topluyor..."):
-            reply = duzgun_web_aramasi(prompt)
+        with st.spinner("Kailer AI bilgiyi topluyor..."):
+            reply = net_bilgi_getir(prompt)
 
         st.write(reply)
         st.session_state.messages.append({"role": "assistant", "content": reply})
