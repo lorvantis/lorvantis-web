@@ -44,53 +44,58 @@ if prompt := st.chat_input("Kailer AI'a bir şeyler yaz veya arat..."):
                 for m in gecmis:
                     messages_payload.append({"role": m["role"], "content": m["content"]})
                 
-                payload = {
-                    "messages": messages_payload,
-                    "model": "openai"
-                }
-                
+                # GELECEKTEKİ 429 VE ÇÖKMELER İÇİN ALTERNATİF MODEL HAVUZU
+                modeller = ["openai", "mistral", "unity"]
                 basarili = False
-                son_hata = ""
-                bekleme_suresi = 2
+                son_hata = "Bilinmeyen Durum"
                 
-                for deneme in range(3):
-                    try:
-                        res = requests.post(
-                            api_url,
-                            json=payload,
-                            headers={'Content-Type': 'application/json'},
-                            timeout=15
-                        )
+                for model_adi in modeller:
+                    if basarili:
+                        break
                         
-                        if res.status_code == 200:
-                            cevap_metni = res.text.strip()
-                            if cevap_metni:
-                                reply = cevap_metni
-                                basarili = True
-                                break
-                            else:
-                                son_hata = "Boş Yanıt"
-                                time.sleep(1.5)
-                        elif res.status_code == 429:
-                            son_hata = "429 - Sunucu Darlanmış"
-                            time.sleep(bekleme_suresi)
-                            bekleme_suresi += 3
-                        else:
-                            son_hata = f"HTTP {res.status_code}"
-                            time.sleep(2)
+                    payload = {
+                        "messages": messages_payload,
+                        "model": model_adi
+                    }
+                    
+                    bekleme_suresi = 1
+                    for deneme in range(2): # Her model için 2 akıllı deneme
+                        try:
+                            res = requests.post(
+                                api_url,
+                                json=payload,
+                                headers={'Content-Type': 'application/json'},
+                                timeout=12
+                            )
                             
-                    except requests.exceptions.Timeout:
-                        son_hata = "Zaman Aşımı"
-                        time.sleep(1.5)
-                    except requests.exceptions.ConnectionError:
-                        son_hata = "Bağlantı Hatası"
-                        time.sleep(1.5)
-                    except Exception as e:
-                        son_hata = "Beklenmeyen Hata"
-                        time.sleep(1.5)
-                        
+                            if res.status_code == 200:
+                                cevap_metni = res.text.strip()
+                                if cevap_metni:
+                                    reply = cevap_metni
+                                    basarili = True
+                                    break
+                                else:
+                                    son_hata = "Boş Yanıt"
+                            elif res.status_code == 429:
+                                son_hata = "429 - Aşırı İstek (Rate Limit)"
+                                time.sleep(bekleme_suresi)
+                                bekleme_suresi *= 2 # Süreyi katlayarak darlanmayı önler
+                            else:
+                                son_hata = f"HTTP {res.status_code}"
+                                time.sleep(1)
+                                
+                        except requests.exceptions.Timeout:
+                            son_hata = "Zaman Aşımı"
+                            time.sleep(1)
+                        except requests.exceptions.ConnectionError:
+                            son_hata = "Bağlantı Kesintisi"
+                            time.sleep(1)
+                        except Exception as e:
+                            son_hata = str(e)
+                            time.sleep(1)
+                            
                 if not basarili:
-                    reply = f"Kanka internetin derinliklerinde kayboldum, sunucu geçici olarak zorlandı. (Gizli Hata: {son_hata}). 5 saniye bekleyip aynı soruyu tekrar yazar mısın?"
+                    reply = f"Kanka anlık bir yoğunluk oldu, sistem tüm alternatif yolları denese de sunucu yanıt vermedi. (Son Hata: {son_hata}). 3-5 saniye bekleyip aynı soruyu tekrar yazar mısın?"
 
             st.write(reply)
             st.session_state.messages.append({"role": "assistant", "content": reply})
