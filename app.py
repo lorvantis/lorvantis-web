@@ -63,10 +63,10 @@ def gercek_web_aramasi(sorgu):
                 snippet = html.unescape(ilk_sonuc.get("snippet", "").replace('<span class="searchmatch">', '').replace('</span>', ''))
                 return f"Kanka '{sorgu}' ile ilgili web'de bulduğum en net bilgi ({baslik}):\n\n{snippet}..."
 
-        return f"Kanka '{sorgu' için web taraması yapıldı ancak net bir özet blok dönmedi. Farklı bir kelimeyle tekrar deneyebiliriz!"
+        return f"Kanka '{sorgu}' için web taraması yapıldı ancak net bir özet blok dönmedi. Farklı bir kelimeyle tekrar deneyebiliriz!"
 
     except Exception as e:
-        return f"Kanka arama sırasında anlık bir ağ bağlantı hatası oluştu. Soruyu tekrar gönderir misin?"
+        return "Kanka arama sırasında anlık bir ağ bağlantı hatası oluştu. Soruyu tekrar gönderir misin?"
 
 if prompt := st.chat_input("Kailer AI'da aratmak istediğin şeyi yaz..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
