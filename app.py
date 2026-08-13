@@ -26,7 +26,6 @@ def web_arama_motoru(sorgu):
         return "Ben Kailer AI kanka! 64 kişilik ekibin için web'i tarayan profesyonel yapay zeka sistemiyim."
 
     try:
-        # DuckDuckGo API üzerinden doğrudan canlı web taraması (Ezber yok, gerçek arama var)
         url = f"https://api.duckduckgo.com/?q={urllib.parse.quote(sorgu)}&format=json&no_html=1&skip_disambig=1"
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         
@@ -39,12 +38,12 @@ def web_arama_motoru(sorgu):
                 
             if data.get("RelatedTopics"):
                 for topic in data["RelatedTopics"]:
-                    if "Text" in topic and topic["Text"]:
+                    if isinstance(topic, dict) and "Text" in topic and topic["Text"]:
                         metinler.append(topic["Text"])
                         
         if metinler:
             birlesmis_sonuc = "\n\n".join(metinler[:3])
-            return f"Kanka '{sorgu' için web'de bulduğum güncel ve net bilgiler:\n\n{birlesmis_sonuc}"
+            return f"Kanka '{sorgu}' için web'de bulduğum güncel ve net bilgiler:\n\n{birlesmis_sonuc}"
             
         return f"Kanka '{sorgu}' araması için web taraması tamamlandı. Bu konuyla ilgili aradığın teknik detaylar ve güncel veriler doğrudan sisteme işlenmiştir. Ekibe sunmak istediğin başka bir başlık var mı?"
         
