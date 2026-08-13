@@ -28,7 +28,6 @@ if prompt := st.chat_input("Kailer AI'a bir şeyler yaz veya arat..."):
     st.chat_message("user").write(prompt)
 
     with st.chat_message("assistant"):
-        # SENİN SEVDİĞİN YÜKLEME YAZISI (Aynen duruyor)
         with st.spinner("Kailer AI internetin altını üstüne getiriyor..."):
             
             reply = hizli_cevap(prompt)
@@ -36,43 +35,62 @@ if prompt := st.chat_input("Kailer AI'a bir şeyler yaz veya arat..."):
             if not reply:
                 api_url = "https://text.pollinations.ai/"
                 
-                # YENİ BEYİN TALİMATI: Yazım hatalarını anla, webde ara!
                 system_prompt = """Senin adın Kailer AI. Kullanıcıyla 'kanka' diyerek samimi bir dille konuş. 
-                Kullanıcı kelimeleri yanlış veya eksik yazsa bile (yazım hatası yapsa bile) ne demek istediğini anla. 
-                Sanki dev bir arama motoruymuşsun gibi internetteki en güncel, doğru ve detaylı bilgiyi bulup efsanevi bir kalitede sun. Arama yaptığını belli etme."""
+                Kullanıcı kelimeleri yanlış veya eksik yazsa bile ne demek istediğini anla. 
+                Sanki dev bir arama motoruymuşsun gibi internetteki en güncel ve doğru bilgiyi bulup efsanevi bir kalitede sun. Arama yaptığını belli etme."""
                 
-                gecmis = st.session_state.messages[-3:]
+                gecmis = st.session_state.messages[-1:]
                 messages_payload = [{"role": "system", "content": system_prompt}]
                 for m in gecmis:
                     messages_payload.append({"role": m["role"], "content": m["content"]})
                 
+                payload = {
+                    "messages": messages_payload,
+                    "model": "openai"
+                }
+                
                 basarili = False
                 son_hata = ""
+                bekleme_suresi = 2
                 
-                # YENİ GÜÇLÜ MOTOR (requests) - 5 Kez Dener, Asla Pes Etmez
-                for deneme in range(5):
+                for deneme in range(3):
                     try:
                         res = requests.post(
                             api_url,
-                            json={"messages": messages_payload, "model": "openai"},
+                            json=payload,
                             headers={'Content-Type': 'application/json'},
                             timeout=15
                         )
                         
-                        if res.status_code == 200 and res.text:
-                            reply = res.text.strip()
-                            basarili = True
-                            break 
+                        if res.status_code == 200:
+                            cevap_metni = res.text.strip()
+                            if cevap_metni:
+                                reply = cevap_metni
+                                basarili = True
+                                break
+                            else:
+                                son_hata = "Boş Yanıt"
+                                time.sleep(1.5)
+                        elif res.status_code == 429:
+                            son_hata = "429 - Sunucu Darlanmış"
+                            time.sleep(bekleme_suresi)
+                            bekleme_suresi += 3
                         else:
-                            son_hata = f"Sunucu Hatası: {res.status_code}"
-                            time.sleep(1.5)
+                            son_hata = f"HTTP {res.status_code}"
+                            time.sleep(2)
+                            
+                    except requests.exceptions.Timeout:
+                        son_hata = "Zaman Aşımı"
+                        time.sleep(1.5)
+                    except requests.exceptions.ConnectionError:
+                        son_hata = "Bağlantı Hatası"
+                        time.sleep(1.5)
                     except Exception as e:
-                        son_hata = "Bağlantı Kesintisi"
+                        son_hata = "Beklenmeyen Hata"
                         time.sleep(1.5)
                         
                 if not basarili:
-                    # SENİN SEVDİĞİN HATA YAZISI (Gizli Hata Kodu ile)
-                    reply = f"Kanka internetin derinliklerinde kayboldum, tam buluyordum ki koptu. (Gizli Hata: {son_hata})"
+                    reply = f"Kanka internetin derinliklerinde kayboldum, sunucu geçici olarak zorlandı. (Gizli Hata: {son_hata}). 5 saniye bekleyip aynı soruyu tekrar yazar mısın?"
 
             st.write(reply)
             st.session_state.messages.append({"role": "assistant", "content": reply})
