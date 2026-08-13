@@ -1,5 +1,4 @@
 import streamlit as st
-import random
 
 st.set_page_config(page_title="Kailer AI", page_icon="🤖")
 
@@ -28,7 +27,7 @@ def akilli_cevap_uret(prompt):
         return f"Kanka '{prompt}' konusunu derinlemesine analiz ettim. Bu tarz konularda en önemli detay, arka plandaki mantığı ve güncel verileri doğru oturtmaktır. Sorduğun soru gayet net; teknik veya genel kültür açısından bakarsak bu işin kökeni oldukça detaylı bir altyapıya dayanıyor. Başka bir detay veya merak ettiğin başka bir yer var mı?"
     
     # Genel kelimeler için
-    return f"Kanka '{prompt' ile ilgili bilgileri taradım. Bu konuda bilmen gereken en net şey, sistemin her türlü senaryoya ayak uydurabilecek kapasitede olmasıdır. Konuyu biraz daha açmak ister misin, hemen detaylandıralım!"
+    return f"Kanka '{prompt}' ile ilgili bilgileri taradım. Bu konuda bilmen gereken en net şey, sistemin her türlü senaryoya ayak uydurabilecek kapasitede olmasıdır. Konuyu biraz daha açmak ister misin, hemen detaylandıralım!"
 
 if prompt := st.chat_input("Kailer AI'a dilediğin soruyu sor..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
