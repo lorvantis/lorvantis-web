@@ -35,7 +35,7 @@ def mucize_doktor_motoru(sorgu):
         return f"Kanka '{sorgu}' konusunda malzeme kalitesi, üretim tekniği ve kullanım amacı hayati önem taşır. Ürünün dikiş detayından taban malzemesine kadar her şeyin arkasında kusursuz bir mühendislik vardır. Hangi detayını incelememizi istersin?"
 
     # DÜNYADAKİ TÜM DİĞER SORULAR İÇİN KUSURSUZ TEŞHİS VE ÇÖZÜM MOTORU
-    return f"Kanka '{sorgu' konusunu Mucize Doktor titizliğiyle inceledim. Bu vakanın özü; hem pratik uygulama adımlarını hem de arka plandaki teknik mantığı doğru kavramaya dayanıyor. Sorduğun soruya karşılık gelen en net ve kusursuz çözüm yolunu eksiksiz bir şekilde uygulayarak sonuca ulaşabilirsin. Konuyu hangi derinliğe indirelim, hemen detaylandıralım kanka!"
+    return f"Kanka '{sorgu}' konusunu Mucize Doktor titizliğiyle inceledim. Bu vakanın özü; hem pratik uygulama adımlarını hem de arka plandaki teknik mantığı doğru kavramaya dayanıyor. Sorduğun soruya karşılık gelen en net ve kusursuz çözüm yolunu eksiksiz bir şekilde uygulayarak sonuca ulaşabilirsin. Konuyu hangi derinliğe indirelim, hemen detaylandıralım kanka!"
 
 if prompt := st.chat_input("Kailer AI'a dilediğin her şeyi sor..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
