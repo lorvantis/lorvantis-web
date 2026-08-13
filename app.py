@@ -44,9 +44,8 @@ def duzgun_web_aramasi(sorgu):
                         parcalar.append(html.unescape(topic["Text"]))
                         
         if parcalar:
-            # Gelen verileri birleştirip temiz bir özet oluşturuyoruz
             temiz_ozet = "\n\n".join(parcalar[:2])
-            return f"Kanka '{sorgu' için web'den derlediğim net bilgiler:\n\n{temiz_ozet}"
+            return f"Kanka aradığın konu için web'den derlediğim net bilgiler:\n\n{temiz_ozet}"
             
         # Wikipedia Destekli Canlı Arama ve Derleme
         wiki_url = f"https://tr.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(sorgu)}&format=json"
@@ -60,12 +59,12 @@ def duzgun_web_aramasi(sorgu):
                 ilk_sonuc = search_results[0]
                 baslik = ilk_sonuc.get("title", "")
                 snippet = html.unescape(ilk_sonuc.get("snippet", "").replace('<span class="searchmatch">', '').replace('</span>', ''))
-                return f"Kanka '{sorgu' için ulaştığım güncel kaynak özeti ({baslik}):\n\n{snippet}..."
+                return f"Kanka ulaştığım güncel kaynak özeti ({baslik}):\n\n{snippet}..."
 
-        return f"Kanka '{sorgu' için web taraması tamamlandı ancak anlamlı bir metin bloğu yakalanamadı. Kelimeyi biraz daha net yazarak tekrar deneyebilirsin!"
+        return "Kanka web taraması tamamlandı ancak anlamlı bir metin bloğu yakalanamadı. Kelimeyi biraz daha net yazarak tekrar deneyebilirsin!"
 
     except Exception as e:
-        return f"Kanka arama sırasında anlık bir ağ dalgalanması oldu. Soruyu bir kez daha gönderirsen hemen veriyi çekeceğim!"
+        return "Kanka arama sırasında anlık bir ağ dalgalanması oldu. Soruyu bir kez daha gönderirsen hemen veriyi çekeceğim!"
 
 if prompt := st.chat_input("Kailer AI'da aratmak istediğin şeyi yaz..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
