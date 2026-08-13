@@ -1,6 +1,5 @@
 import streamlit as st
-import urllib.request
-import urllib.parse
+import requests
 import time
 
 st.set_page_config(page_title="Kailer AI", page_icon="🤖")
@@ -14,7 +13,6 @@ if "messages" not in st.session_state:
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
 
-# 1. BASİT SOHBETLERİ WEBDE ARAMASIN (Anında yerel cevap)
 def hizli_cevap(prompt):
     p = prompt.lower().strip()
     if p in ["sa", "selam", "selamun aleykum", "selamın aleyküm", "merhaba", "hey"]:
@@ -30,39 +28,51 @@ if prompt := st.chat_input("Kailer AI'a bir şeyler yaz veya arat..."):
     st.chat_message("user").write(prompt)
 
     with st.chat_message("assistant"):
-        # SENİN SEVDİĞİN YÜKLEME YAZISI (Dokunmadık!)
+        # SENİN SEVDİĞİN YÜKLEME YAZISI (Aynen duruyor)
         with st.spinner("Kailer AI internetin altını üstüne getiriyor..."):
             
             reply = hizli_cevap(prompt)
             
             if not reply:
-                # 2. ARAMA MOTORU MANTIĞI (CEVAPLARI ŞAHLANDIRDIK)
-                # Artık cevapların çok daha kaliteli, doyurucu ve efsane olması için talimatı güçlendirdik!
-                talimat = f"Senin adın Kailer AI. Kullanıcıyla 'kanka' diyerek samimi bir dille konuş. Verdiğin cevaplar asla kısa, basit veya sıkıcı olmasın; çok detaylı, zekice, nokta atışı ve efsanevi kalitede olsun. Kullanıcının sorusuna en doyurucu bilgiyi sun. Arama yaptığını belli etme. Soru şu: {prompt}"
+                api_url = "https://text.pollinations.ai/"
                 
-                safe_prompt = urllib.parse.quote(talimat)
-                api_url = f"https://text.pollinations.ai/{safe_prompt}"
+                # YENİ BEYİN TALİMATI: Yazım hatalarını anla, webde ara!
+                system_prompt = """Senin adın Kailer AI. Kullanıcıyla 'kanka' diyerek samimi bir dille konuş. 
+                Kullanıcı kelimeleri yanlış veya eksik yazsa bile (yazım hatası yapsa bile) ne demek istediğini anla. 
+                Sanki dev bir arama motoruymuşsun gibi internetteki en güncel, doğru ve detaylı bilgiyi bulup efsanevi bir kalitede sun. Arama yaptığını belli etme."""
+                
+                gecmis = st.session_state.messages[-3:]
+                messages_payload = [{"role": "system", "content": system_prompt}]
+                for m in gecmis:
+                    messages_payload.append({"role": m["role"], "content": m["content"]})
                 
                 basarili = False
-                for deneme in range(10):
+                son_hata = ""
+                
+                # YENİ GÜÇLÜ MOTOR (requests) - 5 Kez Dener, Asla Pes Etmez
+                for deneme in range(5):
                     try:
-                        req = urllib.request.Request(
-                            api_url, 
-                            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+                        res = requests.post(
+                            api_url,
+                            json={"messages": messages_payload, "model": "openai"},
+                            headers={'Content-Type': 'application/json'},
+                            timeout=15
                         )
-                        with urllib.request.urlopen(req, timeout=15) as response:
-                            cevap_metni = response.read().decode('utf-8').strip()
-                            if cevap_metni:
-                                reply = cevap_metni
-                                basarili = True
-                                break 
-                    except Exception:
-                        time.sleep(2) 
-                        continue
+                        
+                        if res.status_code == 200 and res.text:
+                            reply = res.text.strip()
+                            basarili = True
+                            break 
+                        else:
+                            son_hata = f"Sunucu Hatası: {res.status_code}"
+                            time.sleep(1.5)
+                    except Exception as e:
+                        son_hata = "Bağlantı Kesintisi"
+                        time.sleep(1.5)
                         
                 if not basarili:
-                    # SENİN SEVDİĞİN HATA YAZISI (Dokunmadık!)
-                    reply = "Kanka internetin derinliklerinde kayboldum, tam buluyordum ki koptu. Aynı soruyu bir daha yapıştırsana!"
+                    # SENİN SEVDİĞİN HATA YAZISI (Gizli Hata Kodu ile)
+                    reply = f"Kanka internetin derinliklerinde kayboldum, tam buluyordum ki koptu. (Gizli Hata: {son_hata})"
 
             st.write(reply)
             st.session_state.messages.append({"role": "assistant", "content": reply})
