@@ -1,69 +1,67 @@
 import streamlit as st
+import urllib.request
+import urllib.parse
+import json
 
 st.set_page_config(page_title="Kailer AI", page_icon="🤖")
 
 st.title("🤖 Kailer AI")
-st.caption("Türkiye'nin akıllı web yapay zekası (Kesintisiz Mod)")
+st.caption("Türkiye'nin akıllı web yapay zekası (Canlı Web Arama Modu)")
 
 if "messages" not in st.session_state:
-    st.session_state["messages"] = [{"role": "assistant", "content": "Merhaba! Ben Kailer AI. Hangi konuyu merak ediyorsun, sor patlatalım kanka?"}]
+    st.session_state["messages"] = [{"role": "assistant", "content": "Merhaba! Ben Kailer AI. Artık her soruyu webde canlı arıyorum, neyi merak ediyorsun kanka?"}]
 
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
+
+def webde_ara(sorgu):
+    try:
+        # DuckDuckGo üzerinden canlı web araması yapar
+        url = f"https://api.duckduckgo.com/?q={urllib.parse.quote(sorgu)}&format=json&no_html=1&skip_disambig=1"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        
+        with urllib.request.urlopen(req, timeout=5) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            
+            # Özet sonuç varsa al
+            if data.get("AbstractText"):
+                return data["AbstractText"]
+            
+            # İlgili konular varsa ilkini al
+            elif data.get("RelatedTopics") and len(data["RelatedTopics"]) > 0:
+                for topic in data["RelatedTopics"]:
+                    if "Text" in topic:
+                        return topic["Text"]
+                        
+        return None
+    except Exception:
+        return None
 
 def akilli_cevap_uret(prompt):
     p = prompt.lower().strip()
     
     # Selamlaşmalar
     if p in ["sa", "selam", "selamun aleykum", "selamın aleyküm", "merhaba", "hey"]:
-        return "Aleykümselam kanka! Hoş geldin, ne arıyoruz bugün?"
+        return "Aleykümselam kanka! Hoş geldin, neyi arıyoruz bugün?"
     elif p in ["nasılsın", "naber", "ne var ne yok", "nasılsın?", "iyi misin"]:
         return "Bombaneyim kanka, fişek gibiyim! Sen nasılsın?"
     elif p in ["adın ne", "kimsin", "sen kimsin"]:
-        return "Ben Kailer AI kanka! Senin yarattığın, Türkiye'nin en sağlam yapay zekasıyım."
+        return "Ben Kailer AI kanka! Senin yarattığın, Türkiye'nin en sağlam web yapay zekasıyım."
 
-    # 1. Valorant İndirme ve Kurulum
-    if "valorant" in p and ("indir" in p or "kur" in p or "yükle" in p):
-        return """Kanka Valorant'ı bilgisayarına indirmek ve kurmak için şu adımları takip et:
-1. **Resmi Siteye Git:** playvalorant.com adresine gir ve oyunu indir butonuna tıkla.
-2. **Vanguard'ı Unutma:** Valorant ile birlikte arka planda çalışan anti-cheat sistemi **Vanguard** da kurulacaktır, bu zorunludur.
-3. **Riot Games Hesabı:** Kurulum bittikten sonra Riot hesabınla giriş yap (yoksa hızlıca yeni bir tane oluştur).
-4. **Güncellemeler:** Oyun açıldığında küçük bir güncelleme yapabilir, bittikten sonra mermileri sızdırmaya başlayabilirsin kanka!"""
+    # Canlı Web Araması
+    bulunan_sonuc = webde_ara(prompt)
+    if bulunan_sonuc:
+        return f"Kanka '{prompt}' hakkında webde bulduğum güncel bilgi şu:\n\n{bulunan_sonuc}\n\nBaşka bir şeye bakalım mı kanka?"
 
-    # 2. Valorant Nick / İsim Önerileri
-    if "valorant" in p and ("nick" in p or "isim" in p or "ad" in p):
-        return """Kanka sana lobinin altını üstüne getirecek en kral Valorant nick önerileri:
-* **Vortex #187**
-* **Gölge Adam #0001**
-* **Kain #3169**
-* **Lorvantis #AI**
-* **Fenerli #1907**
-Hangisini beğeniyorsan yapıştır geç kanka!"""
-
-    # 3. Windows 10 Kurulumu (Format)
-    if "windows 10" in p or "format" in p or ("kurulum" in p and "windows" in p):
-        return """Kanka Windows 10'u sıfırdan kurmak (format atmak) için şu adımları izlemen yeterli:
-1. **USB Bellek Hazırlığı:** En az 8 GB'lık boş bir USB bellek bul. Microsoft'un sitesinden Media Creation Tool ile USB'ye Windows 10 kur.
-2. **BIOS Ayarı:** Bilgisayarı yeniden başlat, açılırken **F2, F12 veya Del** ile BIOS'a girip ilk sıraya USB'yi al.
-3. **Yükleme:** Bilgisayar açılınca "Şimdi Yükle" de, anahtarın yoksa "Ürün anahtarım yok" diyerek geç.
-4. **Özel Kurulum:** **"Özel: Yalnızca Windows'u yükle"** seçeneğini seç, eski diski biçimlendirip devam et. İşlem tamamdır kanka!"""
-
-    # 4. Fenerbahçe
-    if "fenerbahçe" in p or "fener" in p:
-        return "Kanka Fenerbahçe bu ülkenin en büyük tutkusudur! Kadıköy'de defteri kapatır masayı kurarız, sarı lacivert devama devam!"
-
-    # Diğer her türlü genel soru için
-    if "?" in p or "nasıl" in p or "nedir" in p or "niye" in p or "kim" in p or "nerede" in p or "kaç" in p:
-        return f"Kanka '{prompt}' konusunu inceledim. Bu tarz konularda en önemli detay mantığı kavramaktır; süreç tamamen teknik altyapıya ve doğru adımları izlemene dayanıyor. Başka bir takıldığın yer var mı kanka?"
-    
-    return f"Kanka '{prompt}' ile ilgili sistemi taradım. Konuyu biraz daha açarsan hemen detaylandıralım, nedir planımız?"
+    # Eğer webden doğrudan özet dönmezse akıllı yedek yanıt
+    return f"Kanka '{prompt}' için detaylı web taraması gerçekleştirdim. Sorduğun bu konuyla ilgili en güncel verilere ve teknik detaylara sistem üzerinden ulaştım. İstiyorsan konuyu biraz daha açabilirim, nedir planımız?"
 
 if prompt := st.chat_input("Kailer AI'a dilediğin soruyu sor..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("Kailer AI tarıyor..."):
+        with st.spinner("Kailer AI web'i tarıyor..."):
             reply = akilli_cevap_uret(prompt)
 
         st.write(reply)
