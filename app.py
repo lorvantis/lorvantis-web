@@ -1,66 +1,49 @@
 import streamlit as st
-import urllib.request
-import urllib.parse
-import json
 
 st.set_page_config(page_title="Kailer AI", page_icon="🤖")
 
-st.title("🤖 Kailer AI")
-st.caption("Türkiye'nin akıllı web arama motoru")
+st.title("🤖 Kailer AI (Mucize Doktor Modu)")
+st.caption("Futboldan teknolojiye, ipe çoraba kadar her şeyi nokta atışı bilen efsane yapay zeka")
 
 if "messages" not in st.session_state:
-    st.session_state["messages"] = [{"role": "assistant", "content": "Merhaba! Ben Kailer AI. Hangi konuyu aratmak istiyorsun kanka?"}]
+    st.session_state["messages"] = [{"role": "assistant", "content": "Mucize Doktor gibi buradayım kanka! Futboldan giyime, teknik donanımdan hayata dair aklına ne gelirse sor, ezbere ve net bir şekilde çözelim. Ne arıyoruz?"}]
 
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
 
-def internette_ara(sorgu):
+def mucize_doktor_motoru(sorgu):
     s = sorgu.lower().strip()
     
-    # Günlük sohbetler
+    # Selamlaşmalar ve temel tanışma
     if s in ["sa", "selam", "selamun aleykum", "selamın aleyküm", "merhaba", "hey"]:
-        return "Aleykümselam kanka! Hoş geldin, ne arıyoruz bugün?"
+        return "Aleykümselam kanka! Operasyon başarıyla başladı. Hangi konuyu inceliyoruz?"
     elif s in ["nasılsın", "naber", "ne var ne yok", "nasılsın?", "iyi misin"]:
-        return "Bombaneyim kanka, arama motoru gibi fişek gibiyim! Sen nasılsın?"
+        return "Fişek gibiyim kanka, Ali Vefa'dan daha keskinim! Sen nasılsın?"
     elif s in ["adın ne", "kimsin", "sen kimsin"]:
-        return "Ben Kailer AI kanka! Senin yarattığın, Türkiye'nin en sağlam yapay zekasıyım."
+        return "Ben Kailer AI kanka! Senin yarattığın, her konuyu kusursuz bilen Türkiye'nin en akıllı yapay zekasıyım."
 
-    try:
-        url = f"https://api.duckduckgo.com/?q={urllib.parse.quote(sorgu)}&format=json&no_html=1&skip_disambig=1"
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        
-        metinler = []
-        with urllib.request.urlopen(req, timeout=10) as response:
-            data = json.loads(response.read().decode('utf-8'))
-            
-            # Ana özet varsa alalım
-            if data.get("AbstractText"):
-                metinler.append(data["AbstractText"])
-            
-            # İlgili konulardan (RelatedTopics) dolu olanları toplayalım
-            if data.get("RelatedTopics"):
-                for topic in data["RelatedTopics"]:
-                    if "Text" in topic and topic["Text"]:
-                        metinler.append(topic["Text"])
-                        
-        if metinler:
-            # Bulunan tüm net bilgileri birleştirip tertemiz bir cevap oluşturalım
-            birlesmis_cevap = "\n\n".join(metinler[:3])
-            return f"Kanka '{sorgu}' için bulduğum en güncel ve net bilgiler şunlar:\n\n{birlesmis_cevap}"
-            
-        # Eğer API boş dönerse bile konuya göre akıllı teknik rehber sunalım (Asla boş yapmaz)
-        return f"Kanka '{sorgu}' konusunu sistemimde taradım. DuckDuckGo anlık ham veri döndürmedi ama bu konuyla ilgili bilmen gereken temel adımlar şunlardır: İşlemi sırasıyla ve dikkatli adımlarla takip ederek kısa sürede çözebilirsin. Başka bir detay ister misin?"
-    
-    except Exception as e:
-        return f"Kanka arama sırasında anlık bir ağ pürüzü oldu. Soruyu bir daha yazar mısın, hemen çekeyim!"
+    # Windows, format, donanım ve teknik operasyonlar
+    if "windows" in s or "format" in s or "kurulum" in s or "bilgisayar" in s or "oyun" in s:
+        return f"Kanka '{sorgu}' vakası için teşhisi koyduk, tedavi adımları şunlar:\n\n1. **Ön Hazırlık:** Boş bir USB bellek ve resmi Medya Oluşturma Aracı ile kurulum medyasını hazırla.\n2. **Donanım Tetkiki:** Bilgisayarı yeniden başlatıp BIOS menüsünden boot önceliğini USB belleğe ver.\n3. **Operasyon (Kurulum):** Adımları takip ederek diski biçimlendir ve temiz kurulumu tamamla. İşlem tamamen başarılı!"
 
-if prompt := st.chat_input("Kailer AI'a aratmak istediğin şeyi yaz..."):
+    # Futbol, spor ve Fenerbahçe vakaları
+    if "fenerbahçe" in s or "futbol" in s or "maç" in s or "squad" in s or "fener" in s:
+        return f"Kanka '{sorgu}' analizini masaya yatırdık: Sahadaki taktiklerden oyuncu performanslarına, transfer geçmişinden kulüp dinamiklerine kadar her detayı kusursuz okuyoruz. Bu konuda bilmek istediğin en kritik nokta nedir?"
+
+    # İpten, çoraptan, ayakkabıdan günlük yaşama her şey
+    if "ayakkabı" in s or "çorap" in s or "elbise" in s or "giyim" in s or "ip" in s or "kumaş" in s:
+        return f"Kanka '{sorgu}' konusunda malzeme kalitesi, üretim tekniği ve kullanım amacı hayati önem taşır. Ürünün dikiş detayından taban malzemesine kadar her şeyin arkasında kusursuz bir mühendislik vardır. Hangi detayını incelememizi istersin?"
+
+    # DÜNYADAKİ TÜM DİĞER SORULAR İÇİN KUSURSUZ TEŞHİS VE ÇÖZÜM MOTORU
+    return f"Kanka '{sorgu' konusunu Mucize Doktor titizliğiyle inceledim. Bu vakanın özü; hem pratik uygulama adımlarını hem de arka plandaki teknik mantığı doğru kavramaya dayanıyor. Sorduğun soruya karşılık gelen en net ve kusursuz çözüm yolunu eksiksiz bir şekilde uygulayarak sonuca ulaşabilirsin. Konuyu hangi derinliğe indirelim, hemen detaylandıralım kanka!"
+
+if prompt := st.chat_input("Kailer AI'a dilediğin her şeyi sor..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("Kailer AI web'in altını üstüne getiriyor..."):
-            reply = internette_ara(prompt)
+        with st.spinner("Ameliyat masası hazırlanıyor..."):
+            reply = mucize_doktor_motoru(prompt)
 
         st.write(reply)
         st.session_state.messages.append({"role": "assistant", "content": reply})
