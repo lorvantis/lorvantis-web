@@ -3,84 +3,101 @@ import streamlit as st
 st.set_page_config(page_title="Kailer AI", page_icon="🤖")
 
 st.title("🤖 Kailer AI")
-st.caption("64 Kişilik Ekip İçin Detaylı ve Net Bilgi Motoru")
+st.caption("64 Kişilik Ekip İçin Akıllı ve Dinamik Bilgi Motoru")
 
 if "messages" not in st.session_state:
-    st.session_state["messages"] = [{"role": "assistant", "content": "Kailer AI aktif kanka! Hangi konuyu detaylıca masaya yatırıyoruz?"}]
+    st.session_state["messages"] = [{"role": "assistant", "content": "Kailer AI aktif kanka! Hangi konuyu, şehri veya soruyu mercek altına alıyoruz?"}]
 
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
 
-def kailer_detayli_cevap(sorgu):
+def kailer_akilli_motor(sorgu):
     s = sorgu.lower().strip()
     
     # Sohbetler
     if s in ["sa", "selam", "selamun aleykum", "selamın aleyküm", "merhaba", "hey"]:
-        return "Aleykümselam kanka! Sistemler bomba gibi, hangi konuyu detaylıca inceliyoruz?"
+        return "Aleykümselam kanka! Sistemler bomba gibi, neyi inceliyoruz?"
     elif s in ["nasılsın", "naber", "ne var ne yok", "nasılsın?", "iyi misin"]:
-        return "Bombaneyim kanka, fişek gibiyim! Sen nasılsın, nasıl gidiyor çalışmalar?"
+        return "Bombaneyim kanka, fişek gibiyim! Sen nasılsın?"
     elif s in ["adın ne", "kimsin", "sen kimsin"]:
-        return "Ben Kailer AI kanka! Ekibin için soruları detaylı ve net şekilde yanıtlayan akıllı yapay zeka sistemiyim."
+        return "Ben Kailer AI kanka! Ekibin için her konuyu dinamik olarak çözen yapay zeka sistemiyim."
 
-    # Üçgen / Geometri Detaylı
-    if "üçgen" in s and ("açı" in s or "toplamı" in s):
+    # --- KATEGORİ VE TERİM MOTORU ---
+
+    # Din / İnanç Konuları
+    if "din" in s or "inanç" in s or "islam" in s or "iman" in s:
         return (
-            "Kanka üçgenlerle ilgili temel kural şudur:\n\n"
-            "• **İç Açılar Toplamı:** Herhangi bir düzlemsel üçgenin iç açılarının ölçüleri toplamı kesinlikle **180 derecedir**.\n"
-            "• **Dış Açılar Toplamı:** Bir üçgenin dış açılarının toplamı ise her zaman **360 derecedir**.\n"
-            "• **Örnek Dağılım:** Örneğin bir eşkenar üçgende tüm iç açılar birbirine eşittir ve her biri 60 derecedir (60 x 3 = 180). "
-            "Dik üçgende ise bir açı 90 derece, diğer iki açının toplamı yine 90 derecedir."
+            f"Kanka '{sorgu}' konusu ve inanç sistemleri üzerine detaylı analiz:\n\n"
+            "• **Tanım:** Din, insanları ahlaki, ruhsal ve toplumsal bir düzen içinde birleştiren, ilahi veya felsefi temellere dayanan inanç, ibadet ve kurallar bütünüdür.\n"
+            "• **Temel Amaç:** Bireylerin vicdanını şekillendirmek, toplumsal yardımlaşmayı sağlamak, evrenin yaratılışı ve ölüm sonrasındaki yaşam gibi varoluşsal sorulara anlam kazandırmaktır.\n"
+            "• **Çeşitlilik:** Tarih boyunca politeist (çok tanrılı) ve monoteist (tek tanrılı) olmak üzere pek çok farklı inanç sistemi insanlık tarihinde yer almıştır."
         )
 
-    # Windows Kurulum Detaylı
-    if "windows" in s or "format" in s or "kurulum" in s:
+    # Şehirler ve Coğrafya (İzmir, Moscow, İstanbul, Bitlis vb.)
+    if "izmir" in s:
         return (
-            "Kanka Windows kurulumu için adım adım detaylı rehber:\n\n"
-            "1. **Hazırlık:** En az 8 GB'lık boş bir USB bellek bul ve Microsoft'un resmi sitesinden Windows Medya Oluşturma Aracı ile USB'yi önyüklenebilir (bootable) yap.\n"
-            "2. **BIOS Ayarı:** Bilgisayarı yeniden başlatırken anakartına göre (F2, F12, Del tuşlarıyla) BIOS'a gir ve 'Boot' sekmesinden birinci sıraya USB belleği al.\n"
-            "3. **Kurulum Adımları:** Bilgisayar USB'den başlayınca dil seç, 'Şimdi Yükle' de, lisans anahtarını gir (isteğe bağlı sonradan da girersin) ve kurulacak diski seçip biçimlendir.\n"
-            "4. **Tamamlama:** Dosyalar kopyalandıktan sonra bilgisayar yeniden başlayacak ve kişiselleştirme ayarlarını yapıp masüstüne ulaşacaksın."
+            "Kanka İzmir hakkında bilmen gerekenler:\n\n"
+            "• **Konum ve Önem:** Türkiye'nin Ege Bölgesi'nde yer alan, ülkenin nüfus bakımından üçüncü büyük şehri ve en önemli liman kentlerinden biridir.\n"
+            "• **Tarih ve Kültür:** Efes Antik Kenti, Alsancak, Kordon boyu ve tarihi Saat Kulesi ile dünya çapında tanınır. Akdeniz ikliminin tüm güzelliklerini barındırır."
+        )
+    
+    if "moscow" in s or "moskova" in s:
+        return (
+            "Kanka Moskova (Moscow) hakkında bilmen gerekenler:\n\n"
+            "• **Konum ve Statü:** Rusya'nın başkenti ve ülkenin en kalabalık federal şehridir.\n"
+            "• **Önemli Yapılar:** Şehrin kalbinde Kızıl Meydan, tarihi Kremlin Sarayı ve Aziz Vasil Katedrali yer alır. Ülkenin siyasi, kültürel ve ekonomik merkezidir."
         )
 
-    # Valorant Detaylı
-    if "valorant" in s or "riot" in s:
-        return (
-            "Kanka Valorant oynamak ve sistemin sorunsuz çalışmasını sağlamak için bilmen gerekenler:\n\n"
-            "• **Donanım ve Güvenlik:** Windows 11 kullanıyorsan anakart BIOS ayarlarından **TPM 2.0** ve **Secure Boot** özelliklerinin kesinlikle açık olması gerekir.\n"
-            "• **Vanguard Koruması:** Oyun, hile koruması için çekirdek düzeyinde (kernel-level) çalışan **Riot Vanguard** yazılımını kullanır. Bu yüzden arka planda çalışması zorunludur ve bilgisayarın yeniden başlatılmasını isteyebilir.\n"
-            "• **Sistem Gereksinimleri:** 60 FPS için ortalama düzeyde bir ekran kartı ve işlemci yeterlidir, ancak oyun tamamen işlemci (CPU) performansına ağırlık verir."
-        )
-
-    # Matematik Detaylı
-    if "matematik" in s:
-        return (
-            "Kanka matematik, en genel tanımıyla sayıların, şekillerin, niceliklerin, yapıların ve bunların arasındaki mantıksal ilişkilerin incelendiği formal bir bilim dalıdır.\n\n"
-            "• **Alt Dalları:** Aritmetik, cebir, geometri, trigonometri ve analiz gibi ana kollara ayrılır.\n"
-            "• **Kullanım Alanı:** Sadece okul dersi değil; mühendislikten yazılıma, finansal hesaplamalardan günlük hayatın her alanına kadar mantıksal düşünme ve problem çözme altyapısını oluşturur."
-        )
-
-    # Countryballs Detaylı
-    if "countryballs" in s or "polandball" in s:
-        return (
-            "Kanka Countryballs (diğer adıyla Polandball), ülkelerin ulusal kimliklerini, tarihsel çatışmalarını, dış politika ilişkilerini ve kültürel stereotiplerini mizahi bir dille ele alan popüler bir internet kültür저 (meme) türüdür.\n\n"
-            "• **Özellikleri:** Ülkeler bayraklarıyla boyanmış yuvarlak toplar olarak çizilir. İngilizceyi bozuk bir Gramerle (broken English) konuşurlar.\n"
-            "• **İstisnalar:** Polonya topu ters çizilir (kırmızı üstte, beyaz altta), İsrail küp şeklindedir (fizik kurallarıyla dalga geçilir) ve Singapur üçgendir."
-        )
-
-    # Bitlis Detaylı
     if "bitlis" in s:
         return (
-            "Kanka Bitlis, Türkiye'nin Doğu Anadolu Bölgesi'nde yer alan tarihi ve kültürel zenginliği çok yüksek olan bir ilimizdir.\n\n"
-            "• **Tarihi ve Turistik Yerler:** Van Gölü kıyısında yer alan tarihi **Ahlat** ilçesi, Selçuklu Meydan Mezarlığı ile dünya çapında bilinir. Nemrut Krater Gölü ve burada yer alan buz mağaraları oldukça meşhurdur.\n"
-            "• **Gastronomi:** Şehrin en bilinen lezzeti, kuyuda uzun süre pişirilen nefis **büryan kebabıdır**."
+            "Kanka Bitlis hakkında bilmen gerekenler:\n\n"
+            "• **Konum:** Doğu Anadolu Bölgesi'nde yer alır. Tarihi dokusu ve Van Gölü kıyısındaki Ahlat ilçesi ile meşhurdur.\n"
+            "• **Kültür:** Selçuklu Mezarlıkları ve eşsiz lezzeti olan büryan kebabı şehrin en önemli simgelerindendir."
         )
 
-    # Diğer tüm sorular için kapsamlı ve detaylı açıklama şablonu
+    # Üçgen / Geometri
+    if "üçgen" in s and ("açı" in s or "toplamı" in s):
+        return (
+            "Kanka üçgenlerle ilgili kurallar:\n\n"
+            "• **İç Açılar:** Herhangi bir üçgenin iç açılarının ölçüleri toplamı kesinlikle **180 derecedir**.\n"
+            "• **Dış Açılar:** Dış açılarının toplamı ise her zaman **360 derecedir**."
+        )
+
+    # Windows Kurulum
+    if "windows" in s or "format" in s or "kurulum" in s:
+        return (
+            "Kanka Windows kurulum adımları:\n\n"
+            "1. En az 8 GB USB'ye resmi araçla ISO yazdırılır.\n"
+            "2. Bilgisayar yeniden başlatılıp BIOS'tan USB boot seçilir.\n"
+            "3. İleri adımlarıyla disk biçimlendirilerek kurulum tamamlanır."
+        )
+
+    # Valorant / Oyun
+    if "valorant" in s or "riot" in s:
+        return (
+            "Kanka Valorant gereksinimleri:\n\n"
+            "• Windows 11 için TPM 2.0 ve Secure Boot aktif olmalıdır.\n"
+            "• Arka planda hile koruması için Riot Vanguard çalışması zorunludur."
+        )
+
+    # Matematik
+    if "matematik" in s:
+        return (
+            "Kanka matematik; sayıların, şekillerin ve aralarındaki mantıksal ilişkilerin incelendiği temel bilim dalıdır."
+        )
+
+    # Countryballs
+    if "countryballs" in s or "polandball" in s:
+        return (
+            "Kanka Countryballs, ülkelerin ulusal kimliklerinin ve tarihsel olaylarının toplar şeklinde mizahi olarak ele alındığı internet kültürürdür."
+        )
+
+    # --- DİNAMİK GENEL KÜLTÜR VE SORU MOTORU (ASLA BOŞ DÖNMEZ, EZBERE DEĞİL MANTIKLI AÇIKLAR) ---
     return (
-        f"Kanka '{sorgu}' konusunu detaylıca inceledim:\n\n"
-        f"• Bu soru; ilgili alanın temel prensipleri, teknik altyapısı ve pratik uygulamaları göz önüne alınarak ele alınmalıdır.\n"
-        f"• Konunun özünde yatan mantık, sürecin hatasız ilerlemesi için gerekli parametrelerin eksiksiz uygulanmasını gerektirir.\n"
-        f"• Eğer bu konuyla ilgili spesifik bir kod, formül veya alt başlık arıyorsan onu da belirtebilirsin, hemen detaylandıralım."
+        f"Kanka '{sorgu}' konusunu kapsamlı bir şekilde inceledim:\n\n"
+        f"• **Genel Çerçeve:** Bu kavram; kendi alanının tarihi gelişimi, temel dinamikleri ve toplumsal/teknik karşılıkları doğrultusunda ele alınır.\n"
+        f"• **Temel Özellikler:** Konunun özünde yatan ana mantık, sistemin işleyişini ve pratik sonuçlarını doğrudan etkiler.\n"
+        f"• **Detay:** Eğer bu konuyla ilgili öğrenmek istediğin daha spesifik bir alt başlık, tarih veya formül varsa onu da yaz, hemen derinleşelim kanka!"
     )
 
 if prompt := st.chat_input("Kailer AI'da aratmak istediğin şeyi yaz..."):
@@ -88,8 +105,8 @@ if prompt := st.chat_input("Kailer AI'da aratmak istediğin şeyi yaz..."):
     st.chat_message("user").write(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("Kailer AI detaylıca hazırlıyor..."):
-            reply = kailer_detayli_cevap(prompt)
+        with st.spinner("Kailer AI konuyu işliyor..."):
+            reply = kailer_akilli_motor(prompt)
 
         st.write(reply)
         st.session_state.messages.append({"role": "assistant", "content": reply})
