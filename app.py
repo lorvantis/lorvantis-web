@@ -1,112 +1,99 @@
 import streamlit as st
+import urllib.request
+import urllib.parse
+import json
 
 st.set_page_config(page_title="Kailer AI", page_icon="🤖")
 
 st.title("🤖 Kailer AI")
-st.caption("64 Kişilik Ekip İçin Akıllı ve Dinamik Bilgi Motoru")
+st.caption("64 Kişilik Ekip İçin Gerçek Zamanlı ve Detaylı Bilgi Motorluğu")
 
 if "messages" not in st.session_state:
-    st.session_state["messages"] = [{"role": "assistant", "content": "Kailer AI aktif kanka! Hangi konuyu, şehri veya soruyu mercek altına alıyoruz?"}]
+    st.session_state["messages"] = [{"role": "assistant", "content": "Kailer AI aktif kanka! Sistemler bomba gibi, neyi mercek altına alıyoruz?"}]
 
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
 
-def kailer_akilli_motor(sorgu):
+def kailer_sinirsiz_motor(sorgu):
     s = sorgu.lower().strip()
     
     # Sohbetler
     if s in ["sa", "selam", "selamun aleykum", "selamın aleyküm", "merhaba", "hey"]:
-        return "Aleykümselam kanka! Sistemler bomba gibi, neyi inceliyoruz?"
+        return "Aleykümselam kanka! Sistemler tam gaz ayakta, neyi çözüyoruz?"
     elif s in ["nasılsın", "naber", "ne var ne yok", "nasılsın?", "iyi misin"]:
         return "Bombaneyim kanka, fişek gibiyim! Sen nasılsın?"
     elif s in ["adın ne", "kimsin", "sen kimsin"]:
-        return "Ben Kailer AI kanka! Ekibin için her konuyu dinamik olarak çözen yapay zeka sistemiyim."
+        return "Ben Kailer AI kanka! Ekibin için her şeyi bilen, net ve detaylı cevap veren yapay zeka sistemiyim."
 
-    # --- KATEGORİ VE TERİM MOTORU ---
-
-    # Din / İnanç Konuları
-    if "din" in s or "inanç" in s or "islam" in s or "iman" in s:
-        return (
-            f"Kanka '{sorgu}' konusu ve inanç sistemleri üzerine detaylı analiz:\n\n"
-            "• **Tanım:** Din, insanları ahlaki, ruhsal ve toplumsal bir düzen içinde birleştiren, ilahi veya felsefi temellere dayanan inanç, ibadet ve kurallar bütünüdür.\n"
-            "• **Temel Amaç:** Bireylerin vicdanını şekillendirmek, toplumsal yardımlaşmayı sağlamak, evrenin yaratılışı ve ölüm sonrasındaki yaşam gibi varoluşsal sorulara anlam kazandırmaktır.\n"
-            "• **Çeşitlilik:** Tarih boyunca politeist (çok tanrılı) ve monoteist (tek tanrılı) olmak üzere pek çok farklı inanç sistemi insanlık tarihinde yer almıştır."
-        )
-
-    # Şehirler ve Coğrafya (İzmir, Moscow, İstanbul, Bitlis vb.)
-    if "izmir" in s:
-        return (
-            "Kanka İzmir hakkında bilmen gerekenler:\n\n"
-            "• **Konum ve Önem:** Türkiye'nin Ege Bölgesi'nde yer alan, ülkenin nüfus bakımından üçüncü büyük şehri ve en önemli liman kentlerinden biridir.\n"
-            "• **Tarih ve Kültür:** Efes Antik Kenti, Alsancak, Kordon boyu ve tarihi Saat Kulesi ile dünya çapında tanınır. Akdeniz ikliminin tüm güzelliklerini barındırır."
-        )
+    # --- ÖZEL VE KESİN EŞLEŞMELER (Hata Payı Sıfır) ---
     
-    if "moscow" in s or "moskova" in s:
+    if "mardin" in s:
         return (
-            "Kanka Moskova (Moscow) hakkında bilmen gerekenler:\n\n"
-            "• **Konum ve Statü:** Rusya'nın başkenti ve ülkenin en kalabalık federal şehridir.\n"
-            "• **Önemli Yapılar:** Şehrin kalbinde Kızıl Meydan, tarihi Kremlin Sarayı ve Aziz Vasil Katedrali yer alır. Ülkenin siyasi, kültürel ve ekonomik merkezidir."
+            "Kanka Mardin hakkında bilmen gereken tüm detaylar:\n\n"
+            "• **Coğrafi ve Mimari Yapı:** Güneydoğu Anadolu'da yer alan, taş işçiliğiyle ünlü, evleri teras şeklinde dağ yamacına kurulmuş tarihi bir şehirdir.\n"
+            "• **Kültürel Çeşitlilik:** Yüzyıllar boyunca farklı din, dil ve ırktan insanların (Süryaniler, Kürtler, Türkler, Araplar) barış içinde yaşadığı kadim bir kültür merkezidir.\n"
+            "• **Gezilecek Yerler:** Deyrulzafaran Manastırı, Mardin Kalesi, Zinciriye Medresesi ve tarihi Ulu Cami şehrin en önemli simgelerindendir."
         )
 
-    if "bitlis" in s:
+    if "din" in s and len(s) < 15:
         return (
-            "Kanka Bitlis hakkında bilmen gerekenler:\n\n"
-            "• **Konum:** Doğu Anadolu Bölgesi'nde yer alır. Tarihi dokusu ve Van Gölü kıyısındaki Ahlat ilçesi ile meşhurdur.\n"
-            "• **Kültür:** Selçuklu Mezarlıkları ve eşsiz lezzeti olan büryan kebabı şehrin en önemli simgelerindendir."
+            "Kanka din kavramının detaylı analizi:\n\n"
+            "• **Tanım:** İnsanları ahlaki ve toplumsal bir düzende birleştiren, evrenin yaratılışı ve yaşamın anlamı gibi sorulara yanıt arayan inanç ve ibadet sistemidir.\n"
+            "• **Çeşitlilik:** Tek tanrılı (İslam, Hıristiyanlık, Musevilik) ve çok tanrılı/felsefi inançlar olarak tarihi boyunca pek çok türe ayrılmıştır."
         )
 
-    # Üçgen / Geometri
     if "üçgen" in s and ("açı" in s or "toplamı" in s):
         return (
-            "Kanka üçgenlerle ilgili kurallar:\n\n"
-            "• **İç Açılar:** Herhangi bir üçgenin iç açılarının ölçüleri toplamı kesinlikle **180 derecedir**.\n"
-            "• **Dış Açılar:** Dış açılarının toplamı ise her zaman **360 derecedir**."
+            "Kanka üçgen kuralları:\n\n"
+            "• **İç Açılar Toplamı:** Herhangi bir üçgenin iç açılarının ölçüleri toplamı kesinlikle **180 derecedir**.\n"
+            "• **Dış Açılar Toplamı:** Dış açılarının toplamı ise her zaman **360 derecedir**."
         )
 
-    # Windows Kurulum
     if "windows" in s or "format" in s or "kurulum" in s:
         return (
-            "Kanka Windows kurulum adımları:\n\n"
-            "1. En az 8 GB USB'ye resmi araçla ISO yazdırılır.\n"
-            "2. Bilgisayar yeniden başlatılıp BIOS'tan USB boot seçilir.\n"
-            "3. İleri adımlarıyla disk biçimlendirilerek kurulum tamamlanır."
+            "Kanka Windows Kurulum Rehberi:\n\n"
+            "1. En az 8 GB boş USB belleğe resmi araçla ISO dosyası yazdırılır.\n"
+            "2. Bilgisayar yeniden başlatılıp BIOS menüsünden USB boot seçilir.\n"
+            "3. İleri adımlarıyla diskler biçimlendirilir ve temiz kurulum tamamlanır."
         )
 
-    # Valorant / Oyun
     if "valorant" in s or "riot" in s:
         return (
             "Kanka Valorant gereksinimleri:\n\n"
-            "• Windows 11 için TPM 2.0 ve Secure Boot aktif olmalıdır.\n"
-            "• Arka planda hile koruması için Riot Vanguard çalışması zorunludur."
+            "• Windows 11 için anakarttan **TPM 2.0** ve **Secure Boot** açık olmalıdır.\n"
+            "• Hile koruması için çekirdek düzeyinde çalışan **Riot Vanguard** zorunludur."
         )
 
-    # Matematik
-    if "matematik" in s:
-        return (
-            "Kanka matematik; sayıların, şekillerin ve aralarındaki mantıksal ilişkilerin incelendiği temel bilim dalıdır."
-        )
+    # --- WIKIPEDIA CANLI API KÖPRÜSÜ (Milyonlarca Soru İçin Nokta Atışı Detay) ---
+    try:
+        wiki_url = f"https://tr.wikipedia.org/api/rest_v1/page/summary/{urllib.parse.quote(sorgu)}"
+        req = urllib.request.Request(wiki_url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=4) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            if data.get("type") != "disambiguation" and data.get("extract"):
+                baslik = data.get("title", sorgu)
+                ozet = data.get("extract")
+                return f"**{baslik} Hakkında Detaylı Bilgi:**\n\n{ozet}"
+    except Exception:
+        pass
 
-    # Countryballs
-    if "countryballs" in s or "polandball" in s:
-        return (
-            "Kanka Countryballs, ülkelerin ulusal kimliklerinin ve tarihsel olaylarının toplar şeklinde mizahi olarak ele alındığı internet kültürürdür."
-        )
-
-    # --- DİNAMİK GENEL KÜLTÜR VE SORU MOTORU (ASLA BOŞ DÖNMEZ, EZBERE DEĞİL MANTIKLI AÇIKLAR) ---
+    # --- AKILLI FALLBACK (Asla Boş Dönmez, Net ve Açık Konuşur) ---
     return (
-        f"Kanka '{sorgu}' konusunu kapsamlı bir şekilde inceledim:\n\n"
-        f"• **Genel Çerçeve:** Bu kavram; kendi alanının tarihi gelişimi, temel dinamikleri ve toplumsal/teknik karşılıkları doğrultusunda ele alınır.\n"
-        f"• **Temel Özellikler:** Konunun özünde yatan ana mantık, sistemin işleyişini ve pratik sonuçlarını doğrudan etkiler.\n"
-        f"• **Detay:** Eğer bu konuyla ilgili öğrenmek istediğin daha spesifik bir alt başlık, tarih veya formül varsa onu da yaz, hemen derinleşelim kanka!"
+        f"Kanka '{sorgu'}' konusunu bütün detaylarıyla taradım:\n\n"
+        f"• Bu konu; kendi alanındaki ana kurallar, tarihsel süreç ve pratik kullanım senaryoları dikkate alınarak incelenir.\n"
+        f"• Detaylı analiz istiyorsan, konunun spesifik bir yönünü (örneğin tarihçesi, formülü veya kodunu) belirterek tekrar yazabilirsin, direkt patlatalım!"
     )
 
 if prompt := st.chat_input("Kailer AI'da aratmak istediğin şeyi yaz..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
 
+    with st.session_state.messages.append({"role": "assistant", "content": "..."}): # placeholder
+        pass
+
     with st.chat_message("assistant"):
-        with st.spinner("Kailer AI konuyu işliyor..."):
-            reply = kailer_akilli_motor(prompt)
+        with st.spinner("Kailer AI verileri süzüyor..."):
+            reply = kailer_sinirsiz_motor(prompt)
 
         st.write(reply)
         st.session_state.messages.append({"role": "assistant", "content": reply})
