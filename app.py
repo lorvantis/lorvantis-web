@@ -30,39 +30,38 @@ if prompt := st.chat_input("Kailer AI'a bir şeyler yaz veya arat..."):
     st.chat_message("user").write(prompt)
 
     with st.chat_message("assistant"):
+        # SENİN SEVDİĞİN YÜKLEME YAZISI (Dokunmadık!)
         with st.spinner("Kailer AI internetin altını üstüne getiriyor..."):
             
-            # Önce hızlı cevaplara baksın
             reply = hizli_cevap(prompt)
             
             if not reply:
-                # 2. ARAMA MOTORU MANTIĞI VE İNATÇI DÖNGÜ
-                # Soruyu en hızlı şekilde aramak için URL formatına çeviriyoruz
-                talimat = f"Sen Kailer AI'sın. Kullanıcıya 'kanka' diye hitap et. Arama yaptığını veya sunucuya bağlandığını asla söyleme, sadece cevabı net ve doğru bir şekilde ver. Soru şu: {prompt}"
+                # 2. ARAMA MOTORU MANTIĞI (CEVAPLARI ŞAHLANDIRDIK)
+                # Artık cevapların çok daha kaliteli, doyurucu ve efsane olması için talimatı güçlendirdik!
+                talimat = f"Senin adın Kailer AI. Kullanıcıyla 'kanka' diyerek samimi bir dille konuş. Verdiğin cevaplar asla kısa, basit veya sıkıcı olmasın; çok detaylı, zekice, nokta atışı ve efsanevi kalitede olsun. Kullanıcının sorusuna en doyurucu bilgiyi sun. Arama yaptığını belli etme. Soru şu: {prompt}"
+                
                 safe_prompt = urllib.parse.quote(talimat)
                 api_url = f"https://text.pollinations.ai/{safe_prompt}"
                 
                 basarili = False
-                # 10 kez deneyecek, cevabı alana kadar bırakmayacak (Kullanıcıya hata göstermez)
                 for deneme in range(10):
                     try:
                         req = urllib.request.Request(
                             api_url, 
                             headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
                         )
-                        # Timeout 15 saniye - beklemeye toleranslı
                         with urllib.request.urlopen(req, timeout=15) as response:
                             cevap_metni = response.read().decode('utf-8').strip()
                             if cevap_metni:
                                 reply = cevap_metni
                                 basarili = True
-                                break # Cevabı bulduğu an döngüden çıkar ve cevabı verir!
+                                break 
                     except Exception:
-                        time.sleep(2) # Koparsa 2 saniye nefes alıp tekrar saldırır
+                        time.sleep(2) 
                         continue
                         
-                # 10 denemede bile sunucu tamamen çökmüşse (çok nadir)
                 if not basarili:
+                    # SENİN SEVDİĞİN HATA YAZISI (Dokunmadık!)
                     reply = "Kanka internetin derinliklerinde kayboldum, tam buluyordum ki koptu. Aynı soruyu bir daha yapıştırsana!"
 
             st.write(reply)
