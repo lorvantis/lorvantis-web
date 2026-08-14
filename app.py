@@ -12,7 +12,7 @@ st.caption("64 Kişilik Ekip İçin Gerçek Zamanlı ve Derin Bilgi Motoru")
 
 # Hafıza ve Mesaj Geçmişi
 if "messages" not in st.session_state:
-    st.session_state["messages"] = [{"role": "assistant", "content": "Kailer AI tam kapasite aktif! Artık hem gerçek detayları çekiyorum hem de ne dediğini harfi harfine anlıyorum."}]
+    st.session_state["messages"] = [{"role": "assistant", "content": "Kailer AI tam kapasite aktif! Selamlaşma filtresi düzeltildi, artık kimse Nazi yapmıyor kanka :D"}]
 if "last_topic" not in st.session_state:
     st.session_state["last_topic"] = None
 if "last_wiki_title" not in st.session_state:
@@ -22,13 +22,12 @@ for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
 
 def metni_temizle_ve_anla(metin):
-    """Klavye kaymalarını düzeltir."""
     m = metin.lower().strip()
     hizli_yazim_sozlugu = {
         r'\bhqyır\b': 'hayır', r'\bhsyır\b': 'hayır',
         r'\bevt\b': 'evet', r'\bevtt\b': 'evet',
         r'\btm\b': 'tamam', r'\btmm\b': 'tamam',
-        r'\bnbr\b': 'naber', r'\bslm\b': 'selam',
+        r'\bnbr\b': 'naber', r'\bslm\b': 'selam', r'\bsa\b': 'selam',
         r'\bmrdin\b': 'mardin', r'\bmardn\b': 'mardin',
         r'\bwndows\b': 'windows', r'\bwindos\b': 'windows',
         r'\bbilgilwr\b': 'bilgiler', r'\bbilgo\b': 'bilgi'
@@ -38,8 +37,7 @@ def metni_temizle_ve_anla(metin):
     return m
 
 def arama_sorgusunu_ayikla(sorgu):
-    """'Singapur hakkında bilgiler' gibi cümlelerden asıl kelimeyi cımbızlar."""
-    gereksizler = [r'\bhakkında\b', r'\bbilgiler\b', r'\bbilgi\b', r'\bnedir\b', r'\bkimdir\b', r'\bver\b', r'\bbana\b']
+    gereksizler = [r'\bhakkında\b', r'\bbilgiler\b', r'\bbilgi\b', r'\bnedir\b', r'\bkimdir\b', r'\bver\b', r'\bbanal\b', r'\bbana\b']
     temiz = sorgu
     for g in gereksizler:
         temiz = re.sub(g, '', temiz, flags=re.IGNORECASE).strip()
@@ -61,7 +59,6 @@ def canli_haber_cek():
         return "Kanka şu an canlı haber ajanslarında anlık bir kopukluk var."
 
 def wikipedia_canli_arama(sorgu, detay_modu=False):
-    """Wikipedia'dan asıl kelimeyi bulur ve GERÇEK detay çeker."""
     try:
         hedef = arama_sorgusunu_ayikla(sorgu)
         search_url = f"https://tr.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(hedef)}&utf8=&format=json"
@@ -75,7 +72,6 @@ def wikipedia_canli_arama(sorgu, detay_modu=False):
             best_title = search_data['query']['search'][0]['title']
             
             if detay_modu:
-                # SAHTE METİN YERİNE GERÇEK DERİN DETAY ÇEKİCİ (7 CÜMLE)
                 detail_url = f"https://tr.wikipedia.org/w/api.php?action=query&prop=extracts&exsentences=7&exlimit=1&titles={urllib.parse.quote(best_title)}&explaintext=1&format=json"
                 req_det = urllib.request.Request(detail_url, headers={'User-Agent': 'KailerAI/1.0'})
                 with urllib.request.urlopen(req_det, timeout=4) as det_response:
@@ -99,6 +95,10 @@ def kailer_nihai_motor(ham_sorgu):
     s = metni_temizle_ve_anla(ham_sorgu)
     last = st.session_state.get("last_topic")
     
+    # 0. KESİN SELAMLAMA FİLTRESİ (Nazi örgütüyle karışmasın diye en başta!)
+    if s in ["sa", "selam", "selamun aleykum", "aleykümselam", "merhaba", "hey", "sea"]:
+        return "Aleykümselam kanka! Sistemler bomba gibi, neyi arıyoruz?"
+
     # 1. MATEMATİK
     has_operator = re.search(r'[\+\-\*\/]', ham_sorgu)
     math_match = re.search(r'^[\d\s\+\-\*\/\(\)\.]+$', ham_sorgu)
@@ -114,23 +114,21 @@ def kailer_nihai_motor(ham_sorgu):
         st.session_state["last_topic"] = "haber"
         return canli_haber_cek()
 
-    # 3. KISA MUHABBET VE ANLAMSIZ ARAMALAR (Örn: "ne", "nasıl")
+    # 3. KISA MUHABBET VE ANLAMSIZ ARAMALAR
     if s in ["ne", "nasıl", "neden", "niye", "kim", "nerede", "kimsin"]:
         return "Kanka tek kelime yazdın, bağlamı kopardım. Neyi sorduğunu biraz daha açar mısın?"
 
-    if s in ["selam", "selamun aleykum", "merhaba", "hey"]:
-        return "Aleykümselam kanka! Sistemler online."
-    elif s in ["hayır", "tamam", "yok", "istemiyorum"]:
+    if s in ["hayır", "tamam", "yok", "istemiyorum"]:
         return "Anlaşıldı kanka, konuyu kapattık. Başka ne arıyoruz?"
     elif s in ["evet", "aynen", "olur"]:
         return "Tamamdır kanka, devam edelim."
 
-    # 4. BAĞLAMSAL HAFIZA (Örn: "onları nasıl yapıcam")
+    # 4. BAĞLAMSAL HAFIZA
     if ("nasıl" in s and ("yapıcam" in s or "yaparım" in s or "kurucam" in s or "kurarım" in s)):
         if last == "windows":
-            return "**Windows Kurulum Adımları:**\n1. İnternetten 'Windows 10 ISO' indir.\n2. Rufus programı ile en az 8GB bir USB'ye yazdır.\n3. Bilgisayarı yeniden başlatıp BIOS'a gir (genelde F2 veya Delete).\n4. Boot menüsünden USB'yi 1. sıraya al.\n5. Kaydet ve çık, kurulum ekranı karşına gelecek!"
+            return "**Windows Kurulum Adımları:**\n1. İnternetten 'Windows 10 ISO' indir.\n2. Rufus programı ile en az 8GB bir USB'ye yazdır.\n3. Bilgisayarı yeniden başlatıp BIOS'a gir.\n4. Boot menüsünden USB'yi 1. sıraya al.\n5. Kaydet ve çık!"
         elif last == "valorant":
-            return "**Valorant Ayarları:**\nBIOS'a girip 'Security' sekmesinden 'Secure Boot'u Enable yapmalısın. AMD fTPM veya Intel PTT (TPM 2.0) ayarını da açıp kaydet."
+            return "**Valorant Ayarları:**\nBIOS'a girip 'Security' sekmesinden 'Secure Boot'u Enable yapmalısın. TPM 2.0 ayarını da açmalısın."
 
     # 5. GERÇEK DETAY SİSTEMİ
     is_number_request = s in ["1", "2", "3"] or "numara" in s or "plaka" in s or "kod" in s or "detay" in s
@@ -147,7 +145,6 @@ def kailer_nihai_motor(ham_sorgu):
             if s == "1" or "numara" in s:
                 return f"**{title} Hakkında Sayısal Veriler:**\nBu veriler kurumların resmi veritabanlarındadır."
             elif s == "2" or "detay" in s:
-                # İŞTE BURADA SAHTE METİN YERİNE GERÇEK WIKIPEDIA DETAYI ÇEKİLİYOR
                 _, detay_metni = wikipedia_canli_arama(title, detay_modu=True)
                 return f"**{title} Hakkında Geniş Detay:**\n\n{detay_metni}"
 
@@ -160,7 +157,7 @@ def kailer_nihai_motor(ham_sorgu):
         st.session_state["last_topic"] = "valorant"
         return "Kanka Valorant için Windows 11'de TPM 2.0 ve Secure Boot açık olmalı; Vanguard arka planda çalışmalıdır."
 
-    # 7. CANLI WEB MOTORU (Ayıklanmış sorguyla hatasız arama)
+    # 7. CANLI WEB MOTORU
     web_result = wikipedia_canli_arama(s, detay_modu=False)
     if web_result:
         baslik, ozet = web_result
@@ -175,7 +172,7 @@ def kailer_nihai_motor(ham_sorgu):
             "2. Daha Derin ve Uzun Detayı"
         )
 
-    # 8. BULUNAMAZSA (HATA EKRANI)
+    # 8. BULUNAMAZSA
     st.session_state["last_topic"] = "bilinmeyen"
     return (
         f"Kanka **'{ham_sorgu}'** çok spesifik veya mantık dışı bir kavram olabilir.\n\n"
