@@ -1,13 +1,23 @@
 import streamlit as st
-import re
+
+# --- SAYFA YAPILANDIRMASI ---
+st.set_page_config(
+    page_title="Lorvantis AI",
+    page_icon="🤖",
+    layout="centered"
+)
 
 # --- 1. OTURUM DURUMU (SESSION STATE) BAŞLANGICI ---
 if "mode" not in st.session_state:
-    st.session_state.mode = "soru"  # Varsayılan mod: soru
+    st.session_state.mode = "soru"
 if "akinator_step" not in st.session_state:
     st.session_state.akinator_step = 0
 if "akinator_active" not in st.session_state:
     st.session_state.akinator_active = False
+if "messages" not in st.session_state:
+    st.session_state.messages = [
+        {"role": "assistant", "content": "Selam kanka! Lorvantis AI aktif. Sana nasıl yardımcı olabilirim?"}
+    ]
 
 # --- 2. ANA KOMUT VE NİYET YÖNLENDİRİCİSİ ---
 def process_user_input(user_input):
@@ -58,12 +68,11 @@ def process_user_input(user_input):
 def fetch_dynamic_country_meme(country):
     country_cleaned = country.capitalize()
     
-    # Tüm dünyadaki ülkeler için İngilizce meme/şaka veritabanı simülasyonu ve güvenli fallback
     global_memes = {
         "bangladesh": "When you try to cross the Dhaka street in rush hour and realize you're actually starring in an action movie. 🇧🇩💥",
         "turkey": "Drinking 15 glasses of çay a day and wondering why your heart is executing a techno remix. 🇹🇷☕",
         "usa": "Measuring distance in football fields instead of kilometers because metric system is too mainstream. 🇺🇸🏈",
-        "germany": "When someone doesn't separate their recycling bins properly in {country}: *Internal System Error*. 🇩🇪♻️",
+        "germany": "When someone doesn't separate their recycling bins properly: *Internal System Error*. 🇩🇪♻️",
         "france": "Surrendering to a croissant at 3 AM like a true champion. 🇫🇷🥐",
         "japan": "Waiting for a train that is delayed by exactly 2 seconds and questioning the fabric of reality. 🇯🇵🚄"
     }
@@ -95,11 +104,10 @@ def handle_chat_response(text):
         return "Eyvah... Başın sağ olsun kanka, yemin ederim çok üzüldüm, içim yandı şu an. Mekanı cennet olsun. Diyecek kelime bulamıyorum, yanındayım kanka ne zaman istersen buradayım."
     return f"Sağ ol kanka, buradayım seninle. Anlat bakalım neler oluyor? Dertleşelim."
 
-# --- 6. AKILLI SORU VE KURULUM FİLTRESİ (HATASIZ EŞLEŞTİRME) ---
+# --- 6. AKILLI SORU VE KURULUM FİLTRESİ ---
 def handle_smart_question(text):
     lower = text.lower()
     
-    # Kurulum / Yükleme talepleri (Yüksek lisans veya nişancı oyunu karışıklığını önlemek için özel kural)
     if any(keyword in lower for keyword in ["nasıl yüklerim", "nasıl kurulur", "nasıl indirilir", "kurulum"]):
         if "valorant" in lower:
             return "🎮 **Valorant Kurulum Rehberi:**\n1. Riot Games resmi web sitesine git.\n2. Oyunu indir ve Vanguard anti-cheat sistemini kur.\n3. Bilgisayarını yeniden başlat ve oynamaya başla!"
@@ -108,5 +116,28 @@ def handle_smart_question(text):
         else:
             return f"🔍 '{text}' için arama yapılıyor... Lütfen yüklemek istediğin programın tam adını belirt (Örn: *Valorant nasıl kurulur?*)."
             
-    # Genel ve Doğrulanmış Bilgi Yanıtı
     return f"💡 **Detaylı Bilgi & Web Doğrulama:**\n\n'{text}' konusunu web tabanlı doğrulama motorumuzla analiz ettim. Bu konu hakkında öğrenmek istediğin başka bir şey var mı?"
+
+# --- 7. ARAYÜZ (UI) RENDER MANTIĞI ---
+st.title("🤖 Lorvantis AI")
+st.markdown("---")
+
+# Geçmiş mesajları ekranda göster
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# Kullanıcıdan girdi al
+if prompt := st.chat_input("e!sohbet, E!OYUN, e!soru, e!memebangladesh..."):
+    # Kullanıcı mesajını kaydet ve göster
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
+    # Asistan yanıtını üret
+    response = process_user_input(prompt)
+    
+    # Asistan mesajını kaydet ve göster
+    st.session_state.messages.append({"role": "assistant", "content": response})
+    with st.chat_message("assistant"):
+        st.markdown(response)
