@@ -11,7 +11,7 @@ API_KEYS = [
     "AQ.Ab8RN6KFJ0o55aNdOwiyU81NhqkfC_GGvEDmf1thsIJ8dJILkQ", # 1. Anahtar
     "AQ.Ab8RN6LquOdh5DyS7PQ2pBTb0XWEIfwQ7lfa0vPOBRSYvnQEiA", # 2. Anahtar
     "AQ.Ab8RN6LLyC-O-9s0Y87RO5cigQgzaVXdOPko2469LvyLHE0vcg", # 3. Anahtar
-    "AQ.Ab8RN6Kog_LmYfy0QMKS_vPLS29PLBQxdwKLOuhQZ7Eiehk0wg"  # 4. Anahtar (GÜNCELLENDİ)
+    "AQ.Ab8RN6Kog_LmYfy0QMKS_vPLS29PLBQxdwKLOuhQZ7Eiehk0wg"  # 4. Anahtar
 ]
 
 # --- OTURUM DURUMU (SESSION STATE) ---
@@ -38,7 +38,6 @@ def get_ai_response(prompt, mode="soru"):
     for _ in range(len(API_KEYS)):
         try:
             current_key = API_KEYS[st.session_state.current_api_index]
-
             genai.configure(api_key=current_key)
             
             # KATI MOD KURALLARI (SYSTEM INSTRUCTION)
@@ -46,9 +45,8 @@ def get_ai_response(prompt, mode="soru"):
                 system_instruction = (
                     "Senin adın Lorvantis AI. Kullanıcının en yakın arkadaşısın, 'kanka' diye hitap edersin. "
                     "ÇOK ÖNEMLİ KURAL: Sen şu an SADECE sohbet ve dertleşme modundasın. KESİNLİKLE bilgi sorularına, "
-                    "ürün tavsiyelerine (örneğin 'Xbox alınır mı?', 'Sibirya kaç derece?', 'X nedir?', 'Y nasıl yapılır?'), "
-                    "teknik veya akademik sorulara CEVAP VERMEYECEKSİN! "
-                    "Eğer kullanıcı sana herhangi bir soru sorarsa veya bilgi isterse BİLGİ VERME ve TAM OLARAK şu cevabı ver: "
+                    "ürün tavsiyelerine, teknik veya akademik sorulara CEVAP VERMEYECEKSİN! "
+                    "Eğer kullanıcı sana herhangi bir soru sorarsa BİLGİ VERME ve TAM OLARAK şu cevabı ver: "
                     "'Kanka bilgi almak veya soru sormak için e!soru moduna geçmen lazım! e!soru yazarak soru modunu açabilirsin. Şu an sadece sohbet edip dertleşiyoruz.' "
                     "Sadece nasılsın, naber, günün nasıl geçti gibi günlük samimi sohbetlere ve dertleşmelere cevap ver."
                 )
@@ -89,7 +87,6 @@ def fetch_dynamic_country_meme(country):
     
     meme_text = global_memes.get(country.lower(), f"When you live in {country_cleaned} and Monday morning arrives 5 seconds after Friday night. 🚀😂")
     
-    # Görsel oluşturma
     prompt_image = f"hilarious viral internet meme photo about {country_cleaned} culture, funny caption style"
     encoded_prompt = urllib.parse.quote(prompt_image)
     image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=800&height=600&nologo=true"
@@ -101,6 +98,11 @@ def process_user_input(user_input):
     raw_input = user_input.strip()
     lower_input = raw_input.lower()
     
+    # --- Selamlaşma Filtresi (API'yi gereksiz yormaz ve robotik cevabı engeller) ---
+    greetings = ["sa", "s.a", "s.a.", "selam", "selamunaleykum", "selamünaleyküm", "merhaba", "heyy", "hey"]
+    if lower_input in greetings:
+        return "Aleykümselam kanka! Naber, nasıl yardımcı olabilirim?"
+
     # --- Mod Değiştirme Komutları ---
     if lower_input == "e!sohbet":
         st.session_state.mode = "sohbet"
