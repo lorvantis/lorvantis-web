@@ -4,7 +4,6 @@ import urllib.parse
 import json
 import re
 import random
-import xml.etree.ElementTree as ET
 
 st.set_page_config(page_title="Kailer AI", page_icon="🤖")
 
@@ -15,38 +14,21 @@ st.caption("Eğlence, Oyun, Sohbet ve Bilgi Motoru")
 if "messages" not in st.session_state:
     st.session_state["messages"] = [{
         "role": "assistant", 
-        "content": "Kailer AI aktif kanka! Arama modundayız. Sohbet etmek için `e!sohbet`, oyun oynamak için `e!oyun` yazabilirsin!"
+        "content": "Kailer AI aktif kanka! Şu an Soru modundayız. Dertleşip sohbet etmek için `e!sohbet`, oyun oynamak için `e!oyun` yazabilirsin!"
     }]
 if "mode" not in st.session_state:
     st.session_state["mode"] = "soru"  # "soru", "sohbet", "oyun"
 if "game_state" not in st.session_state:
     st.session_state["game_state"] = None
+if "last_topic" not in st.session_state:
+    st.session_state["last_topic"] = None
 
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
 
-# --- YARDIMCI FONKSİYONLAR ---
 def metni_kucult(metin):
-    """Büyük-küçük harf ve Türkçe karakter karmaşasını tamamen çözer (e!sOhbet -> e!sohbet)."""
     metin = metin.replace("İ", "i").replace("I", "ı")
     return metin.lower().strip()
-
-def turkce_ek_temizle(kelime):
-    ekler = ['nin', 'nın', 'nun', 'nün', 'den', 'dan', 'ten', 'tan', 'de', 'da', 'te', 'ta', 'in', 'ın', 'un', 'ün', 'ye', 'ya', 'e', 'a']
-    for ek in ekler:
-        if kelime.endswith(ek) and len(kelime) - len(ek) >= 3:
-            return kelime[:-len(ek)]
-    return kelime
-
-def arama_sorgusunu_ayikla(sorgu):
-    s = metni_kucult(sorgu)
-    gurultu = [r'\bpiyasa değeri\b', r'\bkaç yaşında\b', r'\bmaaşı\b', r'\bnereli\b', r'\bhakkında\b', r'\bbilgiler\b', r'\bnedir\b', r'\bkimdir\b']
-    for g in gurultu:
-        s = re.sub(g, '', s, flags=re.IGNORECASE).strip()
-    kelimeler = s.split()
-    temiz = [turkce_ek_temizle(k) for k in kelimeler]
-    res = " ".join(temiz).strip()
-    return res if res else sorgu
 
 def rastgele_meme_cek():
     try:
@@ -60,8 +42,7 @@ def rastgele_meme_cek():
 
 def wikipedia_canli_arama(sorgu):
     try:
-        hedef = arama_sorgusunu_ayikla(sorgu)
-        search_url = f"https://tr.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(hedef)}&utf8=&format=json"
+        search_url = f"https://tr.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(sorgu)}&utf8=&format=json"
         req_search = urllib.request.Request(search_url, headers={'User-Agent': 'KailerAI/1.0'})
         with urllib.request.urlopen(req_search, timeout=4) as response:
             search_data = json.loads(response.read().decode('utf-8'))
@@ -81,7 +62,6 @@ def wikipedia_canli_arama(sorgu):
 
 def sohbet_modu_yanitla(mesaj):
     m = metni_kucult(mesaj)
-    
     if any(k in m for k in ["nasılsın", "nasilsin", "nbr", "naber", "nasıl gidiyor"]):
         return random.choice([
             "İyiyim kanka, motorlar sıcak takılıyorum! Sen nasılsın, keyifler nasıl?",
@@ -92,45 +72,43 @@ def sohbet_modu_yanitla(mesaj):
         return "Ağzının tadı daim olsun kanka! Anlat bakalım başka ne var ne yok?"
     else:
         return random.choice([
-            f"Anladım kanka. '{mesaj}' dedin ama biraz daha açsana konuyu, muhabbet derinleşsin!",
-            "Harbi mi diyorsun kanka? Valla dinliyorum seni, anlat anlat!",
-            "Haklısın valla kanka. Başka ne var ne yok?"
+            f"Anladım kanka. '{mesaj}' dedin, dinliyorum seni, dertleşelim anlat anlat!",
+            "Harbi mi diyorsun kanka? Valla buradayım, içini dök dinliyorum.",
+            "Haklısın valla kanka. Anlat bakalım başka neler sıkıyor canını?"
         ])
 
 # --- ANA MOTOR ---
 def kailer_nihai_motor(ham_sorgu):
     s = metni_kucult(ham_sorgu)
 
-    # -------------------------------------------------------------
     # 0. KÜFÜR FİLTRESİ
-    # -------------------------------------------------------------
     kufur = r'\b(aq|amk|a\.m\.k|ananı|ananın|sik|sikerim|sikim|amcık|orospu|piç)\b'
     if re.search(kufur, s):
         return "Kanka sakin ol ya! Küfüre hiç gerek yok, kafa kafaya verip hallederiz :D"
 
-    # -------------------------------------------------------------
-    # 1. MOD DEĞİŞTİRME KOMUTLARI (e!sOhbet, E!SOHBET vb.)
-    # -------------------------------------------------------------
+    # 1. MOD DEĞİŞTİRME KOMUTLARI
     if s.startswith("e!"):
         komut = s[2:].strip()
 
         if komut in ["sohbet", "chat"]:
             st.session_state["mode"] = "sohbet"
-            return "💬 **SOHBET MODU AKTİF!**\n\nArtık soru-cevap veya Vikipedi araması yok kanka! Sadece sen ve ben muhabbet ediyoruz. Anlat bakalım, ne var ne yok?\n\n*(Arama moduna dönmek için `e!soru` yazabilirsin)*"
+            st.session_state["game_state"] = None
+            return "💬 **SOHBET & DERTLEŞME MODU AKTİF!**\n\nArtık arama yapmayacağım kanka! Sadece sen ve ben muhabbet edip dertleşiyoruz. İçini dökebilirsin!\n\n*(Soru moduna dönmek için `e!soru` yazabilirsin)*"
         
         elif komut in ["soru", "bilgi", "arama"]:
             st.session_state["mode"] = "soru"
-            return "🔍 **SORU & BİLGİ MODU AKTİF!**\n\nSohbetten çıktık kanka. Artık ne aratırsan anında canlı veritabanından çekip sana sunacağım!"
+            st.session_state["game_state"] = None
+            return "🔍 **SORU & BİLGİ MODU AKTİF!**\n\nSohbetten/oyundan çıktık kanka. Artık ne aratırsan anında detaylıca bulup getireceğim!"
 
         elif komut in ["oyun", "game"]:
             st.session_state["mode"] = "oyun"
             st.session_state["game_state"] = "secim"
             return (
                 "🎮 **KAİLER OYUN MERKEZİ**\n\n"
-                "Hangi oyunu oynamak istersin kanka? (Aşağıdaki numarayı veya ismi yaz):\n\n"
-                "1. **Adam Asmaca** (Gizli kelimeyi harf harf bul!)\n"
-                "2. **Akinator / Akıl Okuma** (Sen bir şey tut ben bileyim ya da ben tutayım sen bil!)\n\n"
-                "*(Oyundan çıkmak için `e!soru` veya `e!sohbet` yazabilirsin)*"
+                "Hangi oyunu oynamak istersin kanka?\n\n"
+                "1. **Adam Asmaca**\n"
+                "2. **Akinator (Akıl Okuma)**\n\n"
+                "*(Seçmek için 1 veya 2 yaz. Çıkmak için `e!soru` veya `e!sohbet` yazabilirsin)*"
             )
 
         elif komut in ["meme", "miim", "mim"]:
@@ -139,9 +117,11 @@ def kailer_nihai_motor(ham_sorgu):
         else:
             return f"Kanka `e!{komut}` komutunu bulamadım. `e!sohbet`, `e!oyun`, `e!soru` veya `e!meme` deneyebilirsin!"
 
-    # -------------------------------------------------------------
-    # 2. OYUN MODU MANTIĞI
-    # -------------------------------------------------------------
+    # 2. SOHBET MODU KONTROLÜ
+    if st.session_state["mode"] == "sohbet":
+        return sohbet_modu_yanitla(ham_sorgu)
+
+    # 3. OYUN MODU KONTROLÜ
     if st.session_state["mode"] == "oyun":
         if st.session_state["game_state"] == "secim":
             if s in ["1", "adam asmaca"]:
@@ -151,10 +131,11 @@ def kailer_nihai_motor(ham_sorgu):
                 st.session_state["lives"] = 6
                 display = "".join([c if c in st.session_state["guesses"] else " _ " for c in st.session_state["secret_word"]])
                 return f"🎮 **Adam Asmaca Başladı!**\n\nKelime: `{display}`\nKalan Hak: **{st.session_state['lives']}**\n\nHarf yaz kanka!"
-            
             elif s in ["2", "akinator", "akil okuma"]:
                 st.session_state["game_state"] = "akinator_secim"
-                return "🧙‍♂️ **Akinator Modu!**\n\n1. **Aklımda Ben Tutayım:** Ben tutayım sen bil!\n2. **Aklında Sen Tut:** Sen tut, ben tahmin edeyim!\n\n(1 veya 2 yaz kanka)"
+                return "🧙‍♂️ **Akinator Modu!**\n\n1. **Aklımda Ben Tutayım**\n2. **Aklında Sen Tut**\n\n(1 veya 2 yaz kanka)"
+            else:
+                return "Kanka 1 (Adam Asmaca) veya 2 (Akinator) yazman gerekiyor!"
 
         elif st.session_state["game_state"] == "adam_asmaca":
             if len(s) == 1 and s.isalpha():
@@ -165,42 +146,57 @@ def kailer_nihai_motor(ham_sorgu):
                     st.session_state["lives"] -= 1
                 display = "".join([c if c in st.session_state["guesses"] else " _ " for c in st.session_state["secret_word"]])
                 if "_" not in display:
-                    st.session_state["mode"] = "soru"
-                    return f"🎉 **TEBRİKLER KAZANDIN!** Kelime: **{st.session_state['secret_word'].upper()}**"
+                    st.session_state["game_state"] = "secim"
+                    return f"🎉 **TEBRİKLER KAZANDIN!** Kelime: **{st.session_state['secret_word'].upper()}**\n\nTekrar oynamak için 1 veya 2 yaz, ya da `e!sohbet` / `e!soru` yaz."
                 if st.session_state["lives"] <= 0:
-                    st.session_state["mode"] = "soru"
-                    return f"💀 **KAYBETTİN!** Doğru kelime: **{st.session_state['secret_word'].upper()}**"
+                    st.session_state["game_state"] = "secim"
+                    return f"💀 **KAYBETTİN!** Doğru kelime: **{st.session_state['secret_word'].upper()}**\n\nTekrar oynamak için 1 veya 2 yaz, ya da `e!sohbet` / `e!soru` yaz."
                 return f"Kelime: `{display}` | Kalan Hak: **{st.session_state['lives']}**"
+            else:
+                return "Kanka sadece tek bir harf yazman gerekiyor!"
 
         elif st.session_state["game_state"] == "akinator_secim":
             if s == "1":
                 st.session_state["game_state"] = "bot_tuttu"
                 st.session_state["bot_target"] = random.choice(["araba", "telefon", "fenerbahçe", "kedi"])
-                return "Aklımda bir nesne tuttum kanka! Sorularla tahmin etmeye çalış!"
+                return "Aklımda bir nesne tuttum kanka! Soru sorarak tahmin etmeye çalış."
             elif s == "2":
                 st.session_state["game_state"] = "user_tuttu"
-                return "Aklında bir şey tut kanka! Hazırsan 'Hazırım' yaz!"
+                return "Aklında bir şey tut kanka! Hazırsan 'Hazırım' yaz."
+            else:
+                return "Kanka 1 veya 2 yazman gerekiyor!"
 
-    # -------------------------------------------------------------
-    # 3. SOHBET MODU (Sadece e!soru ile çıkılır)
-    # -------------------------------------------------------------
-    if st.session_state["mode"] == "sohbet":
-        return sohbet_modu_yanitla(ham_sorgu)
+        elif st.session_state["game_state"] == "bot_tuttu":
+            return f"Aklımda tuttuğum nesneyle ilgili güzel bir soru sordun kanka! Tahmin etmeye devam et (`e!soru` ile çıkabilirsin)."
 
-    # -------------------------------------------------------------
-    # 4. SORU & BİLGİ MODU (Varsayılan)
-    # -------------------------------------------------------------
+        elif st.session_state["game_state"] == "user_tuttu":
+            if "hazir" in s:
+                return "Süper! Başlayalım: Bu nesne canlı mı?"
+            else:
+                return f"Sen '{ham_sorgu}' dedin kanka. Hazırsan 'Hazırım' yaz."
+
+    # 4. SORU & BİLGİ MODU (Detaylı Cevap + Konu Takibi)
     selamlar = ["sa", "slm", "selam", "selamun aleykum", "merhaba", "hey"]
     if s in selamlar:
-        return "Aleykümselam kanka! Arama modundayız. Sohbet etmek istersen `e!sohbet` yazabilirsin!"
+        return "Aleykümselam kanka! Arama modundayız. Sohbet etmek için `e!sohbet`, oyun oynamak için `e!oyun` yazabilirsin!"
 
-    # Vikipedi Arama
-    web_result = wikipedia_canli_arama(ham_sorgu)
+    # Eğer daha önce bir konu aratıldıysa ve kullanıcı kısa bir detay (örn: "nüfusu", "plakası", "tarihi") yazdıysa
+    hedef_sorgu = ham_sorgu
+    if st.session_state.get("last_topic") and len(ham_sorgu.split()) <= 3 and not any(k in s for k in ["kimdir", "nedir", "nerede", "nasıl"]):
+        hedef_sorgu = f"{st.session_state['last_topic']} {ham_sorgu}"
+
+    web_result = wikipedia_canli_arama(hedef_sorgu)
+    
+    # Eğer birleştirilmiş arama sonuç vermezse ham sorguyu ara
+    if not web_result and hedef_sorgu != ham_sorgu:
+        web_result = wikipedia_canli_arama(ham_sorgu)
+
     if web_result:
         baslik, ozet = web_result
-        return f"**{baslik} Hakkında Bilgi:**\n\n{ozet}"
+        st.session_state["last_topic"] = baslik
+        return f"**{baslik} Hakkında Detaylı Bilgi:**\n\n{ozet}\n\n📌 **{baslik}** hakkında öğrenmek istediğin başka bir şey var mı?"
 
-    return f"Kanka **'{ham_sorgu}'** hakkında bilgi bulamadım. Muhabbet etmek istersen `e!sohbet` yazabilirsin!"
+    return f"Kanka **'{ham_sorgu}'** hakkında detaylı bilgi bulamadım. Sohbet etmek için `e!sohbet`, oyun oynamak için `e!oyun` yazabilirsin!"
 
 # --- İNPUT ALMA VE EKRANA BASMA ---
 if prompt := st.chat_input("e!sOhbet, E!OYUN, e!soru, e!meme veya aratmak istediğini yaz..."):
