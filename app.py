@@ -6,7 +6,7 @@ import streamlit as st
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Lorvantis AI", page_icon="🤖", layout="centered")
 
-# --- 4 ADET DAHİLİ API KEY HAVUZU ---
+# --- SENİN VERDİĞİN 4 ADET API KEY ---
 API_KEYS = [
     "AQ.Ab8RN6KFJ0o55aNdOwiyU81NhqkfC_GGvEDmf1thsIJ8dJILkQ",
     "AQ.Ab8RN6LquOdh5DyS7PQ2pBTb0XWEIfwQ7lfa0vPOBRSYvnQEiA",
@@ -41,7 +41,7 @@ def get_ai_response(prompt, mode="soru"):
     try:
       genai.configure(api_key=key)
 
-      # KATI MOD KURALLARI (SYSTEM INSTRUCTION)
+      # KATI MOD KURALLARI
       if mode == "sohbet":
         system_instruction = (
             "Senin adın Lorvantis AI. Kullanıcının en yakın arkadaşısın, 'kanka'"
@@ -133,7 +133,7 @@ def process_user_input(user_input):
   raw_input = user_input.strip()
   lower_input = raw_input.lower()
 
-  # 1. Selamlaşma Filtresi (API'ye gitmez)
+  # 1. Selamlaşma Filtresi
   greetings = [
       "sa",
       "s.a",
