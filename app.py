@@ -1,14 +1,15 @@
 import random
 import urllib.parse
-import requests
+from google import genai
+from google.genai import types
 import streamlit as st
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Lorvantis AI", page_icon="🤖", layout="centered")
 
-# --- SENİN AQ. ANAHTARLARIN ---
+# --- SENİN AQ. ANAHTARLARIN (Buraya tam ve eksiksiz yapıştır) ---
 API_KEYS = [
-    "AQ.Ab8RN6LM5_YH-5YfXRA1VZC6kCj1...",  # Kendi anahtarını buraya tam yapıştır
+    
     "AQ.Ab8RN6KFJ0o55aNdOwiyU81NhqkfC_GGvEDmf1thsIJ8dJILkQ",
     "AQ.Ab8RN6LquOdh5DyS7PQ2pBTb0XWEIfwQ7lfa0vPOBRSYvnQEiA",
     "AQ.Ab8RN6LLyC-O-9s0Y87RO5cigQgzaVXdOPko2469LvyLHE0vcg",
@@ -29,11 +30,8 @@ if "hangman_guesses" not in st.session_state:
   st.session_state.hangman_guesses = []
 
 
-# --- HATASIZ REST API İSTEK MOTORU (AQ. TOKEN UYUMLU) ---
+# --- RESMİ GOOGLE-GENAI SDK MOTORU (AQ. UYUMLU) ---
 def get_ai_response(prompt, mode="soru"):
-  # Google Cloud Vertex / Gemini REST uç noktası (AQ. tokenler için en kararlı sürüm)
-  url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
-
   if mode == "sohbet":
     system_instruction = (
         "Senin adın Lorvantis AI. Kullanıcının en yakın arkadaşısın, 'kanka'"
@@ -49,42 +47,33 @@ def get_ai_response(prompt, mode="soru"):
         " sorduğu sorulara son derece detaylı, açıklayıcı ve doğru yanıtlar ver."
     )
 
-  payload = {
-      "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-      "systemInstruction": {"parts": [{"text": system_instruction}]},
-  }
-
   errors = []
-  for idx, key in enumerate(API_KEYS):
+  for idx, key in enumerate(API_KEYS]:
     if not key or "..." in key:
       continue
-
-    # AQ. tokenlerini OAuth/Bearer erişim kodu olarak ele alan doğru başlık
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {key}",
-    }
-
     try:
-      resp = requests.post(url, headers=headers, json=payload, timeout=20)
-      if resp.status_code == 200:
-        data = resp.json()
-        # Yanıt yapısının bozulmasını önlemek için güvenli veri çekme
-        candidates = data.get("candidates", [])
-        if candidates:
-          parts = candidates[0].get("content", {}).get("parts", [])
-          if parts:
-            reply = parts[0].get("text", "")
-            if mode == "soru":
-              return (
-                  f"{reply}\n\n**Bu konu hakkında öğrenmek istediğin başka bir"
-                  " şey var mı?**"
-              )
-            return reply
+      # Resmi Google GenAI SDK istemcisi
+      client = genai.Client(api_key=key)
 
-      errors.append(f"Key {idx + 1} Kod: {resp.status_code}")
+      response = client.models.generate_content(
+          model="gemini-1.5-flash",
+          contents=prompt,
+          config=types.GenerateContentConfig(
+              system_instruction=system_instruction,
+          ),
+      )
+
+      reply = response.text
+      if mode == "soru":
+        return (
+            f"{reply}\n\n**Bu konu hakkında öğrenmek istediğin başka bir şey var"
+            " mı?**"
+        )
+      return reply
+
     except Exception as e:
       errors.append(f"Key {idx + 1} Hata: {str(e)}")
+      continue
 
   return (
       "⚠️ **Sistem Bağlantı Hatası:** Anahtarlar doğrulanamadı.\n\n"
@@ -117,7 +106,7 @@ def fetch_dynamic_country_meme(country):
   )
 
 
-# --- ANA İŞLEYİCİ MANTIK (HATA KORUMALI) ---
+# --- ANA İŞLEYİCİ MANTIK ---
 def process_user_input(user_input):
   raw_input = user_input.strip()
   lower_input = raw_input.lower()
@@ -187,7 +176,6 @@ def process_user_input(user_input):
 st.title("🤖 Lorvantis AI")
 st.markdown("---")
 
-# Sohbet geçmişini ekrana güvenli basma
 for message in st.session_state.messages:
   with st.chat_message(message["role"]):
     st.markdown(message["content"])
