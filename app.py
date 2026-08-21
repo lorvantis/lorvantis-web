@@ -1,13 +1,15 @@
 import random
 import urllib.parse
-import requests
+from google import genai
+from google.genai import types
 import streamlit as st
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Lorvantis AI", page_icon="🤖", layout="centered")
 
-# --- SENİN 4 ADET API KEY'İN ---
+# --- SENİN AQ. ANAHTARLARIN ---
 API_KEYS = [
+    "AQ.Ab8RN6LM5_YH-5YfXRA1VZC6kCj1...",  # En son aldığın
     "AQ.Ab8RN6KFJ0o55aNdOwiyU81NhqkfC_GGvEDmf1thsIJ8dJILkQ",
     "AQ.Ab8RN6LquOdh5DyS7PQ2pBTb0XWEIfwQ7lfa0vPOBRSYvnQEiA",
     "AQ.Ab8RN6LLyC-O-9s0Y87RO5cigQgzaVXdOPko2469LvyLHE0vcg",
@@ -28,11 +30,8 @@ if "hangman_guesses" not in st.session_state:
   st.session_state.hangman_guesses = []
 
 
-# --- GEMINI REST API İSTEK MOTORU (BEARER TOKEN DESTEKLİ) ---
+# --- YENİ NESİL GEMINI API MOTORU (AQ. UYUMLU) ---
 def get_ai_response(prompt, mode="soru"):
-  url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
-  errors = []
-
   if mode == "sohbet":
     system_instruction = (
         "Senin adın Lorvantis AI. Kullanıcının en yakın arkadaşısın, 'kanka'"
@@ -48,51 +47,30 @@ def get_ai_response(prompt, mode="soru"):
         " sorduğu sorulara son derece detaylı, açıklayıcı ve doğru yanıtlar ver."
     )
 
-  payload = {
-      "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-      "systemInstruction": {"parts": [{"text": system_instruction}]},
-  }
-
+  errors = []
   for idx, key in enumerate(API_KEYS):
-    if not key:
+    if not key or "..." in key:
       continue
-
-    # AQ. tokenlarını doğru tanıyan Bearer yetkilendirme başlığı
-    headers_bearer = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {key}",
-    }
-
     try:
-      resp = requests.post(
-          url, headers=headers_bearer, json=payload, timeout=15
+      # Google'ın yeni nesil resmi kütüphanesi AQ. anahtarları direkt kabul eder
+      client = genai.Client(api_key=key)
+      
+      response = client.models.generate_content(
+          model="gemini-1.5-flash",
+          contents=prompt,
+          config=types.GenerateContentConfig(
+              system_instruction=system_instruction,
+          ),
       )
-      if resp.status_code == 200:
-        data = resp.json()
-        reply = data["candidates"][0]["content"]["parts"][0]["text"]
-        if mode == "soru":
-          return (
-              f"{reply}\n\n**Bu konu hakkında öğrenmek istediğin başka bir şey"
-              " var mı?**"
-          )
-        return reply
+      
+      reply = response.text
+      if mode == "soru":
+        return f"{reply}\n\n**Bu konu hakkında öğrenmek istediğin başka bir şey var mı?**"
+      return reply
 
-      # Yedek yöntem: x-goog-api-key başlığı
-      headers_alt = {"Content-Type": "application/json", "x-goog-api-key": key}
-      resp_alt = requests.post(url, headers=headers_alt, json=payload, timeout=15)
-      if resp_alt.status_code == 200:
-        data = resp_alt.json()
-        reply = data["candidates"][0]["content"]["parts"][0]["text"]
-        if mode == "soru":
-          return (
-              f"{reply}\n\n**Bu konu hakkında öğrenmek istediğin başka bir şey"
-              " var mı?**"
-          )
-        return reply
-
-      errors.append(f"❌ Key {idx + 1} Yanıtı: {resp.text}")
     except Exception as e:
-      errors.append(f"❌ Key {idx + 1} Bağlantı Hatası: {str(e)}")
+      errors.append(f"❌ Key {idx + 1} Hatası: {str(e)}")
+      continue
 
   return "⚠️ **Sistem Bağlantı Hatası:**\n\n" + "\n\n".join(errors)
 
@@ -101,25 +79,14 @@ def get_ai_response(prompt, mode="soru"):
 def fetch_dynamic_country_meme(country):
   country_cleaned = country.capitalize()
   global_memes = {
-      "turkey": (
-          "Drinking 15 glasses of çay a day and wondering why your heart is"
-          " executing a techno remix. 🇹🇷☕"
-      ),
-      "usa": (
-          "Measuring distance in football fields instead of kilometers because"
-          " metric system is too mainstream. 🇺🇸🏈"
-      ),
+      "turkey": "Drinking 15 glasses of çay a day and wondering why your heart is executing a techno remix. 🇹🇷☕",
+      "usa": "Measuring distance in football fields instead of kilometers because metric system is too mainstream. 🇺🇸🏈",
   }
-  meme_text = global_memes.get(
-      country.lower(), f"Living in {country_cleaned} be like... 🚀😂"
-  )
+  meme_text = global_memes.get(country.lower(), f"Living in {country_cleaned} be like... 🚀😂")
   prompt_image = f"hilarious viral internet meme photo about {country_cleaned} culture, funny caption style"
   encoded_prompt = urllib.parse.quote(prompt_image)
   image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=800&height=600&nologo=true"
-  return (
-      f"🌍 **{country_cleaned} Meme:**\n\n{meme_text}\n\n![Meme"
-      f" Fotoğrafı]({image_url})"
-  )
+  return f"🌍 **{country_cleaned} Meme:**\n\n{meme_text}\n\n![Meme Fotoğrafı]({image_url})"
 
 
 # --- ANA İŞLEYİCİ MANTIK ---
@@ -137,10 +104,7 @@ def process_user_input(user_input):
 
   elif lower_input == "e!soru":
     st.session_state.mode = "soru"
-    return (
-        "🔍 **SORU MODU AKTİF!**\n\nHer türlü sorunu sorabilirsin kanka,"
-        " yanıtlamaya hazırım."
-    )
+    return "🔍 **SORU MODU AKTİF!**\n\nHer türlü sorunu sorabilirsin kanka, yanıtlamaya hazırım."
 
   elif lower_input in ["e!oyun", "e!oyunlar"]:
     st.session_state.mode = "oyun"
@@ -148,34 +112,23 @@ def process_user_input(user_input):
 
   elif lower_input == "e!turkishmeme":
     return fetch_dynamic_country_meme("turkey")
-
+    
   elif lower_input == "e!englishmeme":
     return fetch_dynamic_country_meme("usa")
 
   elif lower_input == "e!adamasmaca":
     st.session_state.mode = "adamasmaca"
-    st.session_state.hangman_word = random.choice(
-        ["fenerbahce", "python", "yapayzeka", "streamlit", "yazilim"]
-    )
+    st.session_state.hangman_word = random.choice(["fenerbahce", "python", "yapayzeka", "streamlit", "yazilim"])
     st.session_state.hangman_guesses = []
-    return (
-        "🎯 **Adam Asmaca Başladı!**\n\nKelime:"
-        f" `{' '.join(['_' for _ in st.session_state.hangman_word])}`"
-    )
+    return f"🎯 **Adam Asmaca Başladı!**\n\nKelime: `{' '.join(['_' for _ in st.session_state.hangman_word])}`"
 
   if st.session_state.mode == "adamasmaca":
     if len(lower_input) == 1 and lower_input.isalpha():
       st.session_state.hangman_guesses.append(lower_input)
-      display_word = " ".join([
-          char if char in st.session_state.hangman_guesses else "_"
-          for char in st.session_state.hangman_word
-      ])
+      display_word = " ".join([char if char in st.session_state.hangman_guesses else "_" for char in st.session_state.hangman_word])
       if "_" not in display_word:
         st.session_state.mode = "soru"
-        return (
-            "🎉 Helal kanka, kelimeyi buldun:"
-            f" **{st.session_state.hangman_word.upper()}**! Soru moduna geçtik."
-        )
+        return f"🎉 Helal kanka, kelimeyi buldun: **{st.session_state.hangman_word.upper()}**! Soru moduna geçtik."
       return f"Kelime: `{display_word}`"
     return "⚠️ Sadece tek bir harf yaz kanka."
 
