@@ -7,13 +7,12 @@ import streamlit as st
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Lorvantis AI", page_icon="🤖", layout="centered")
 
-# --- SENİN AQ. ANAHTARLARIN (Buraya tam ve eksiksiz yapıştır) ---
+# --- SENİN 4 GERÇEK AQ. ANAHTARIN ---
 API_KEYS = [
-    
-    "AQ.Ab8RN6KFJ0o55aNdOwiyU81NhqkfC_GGvEDmf1thsIJ8dJILkQ",
-    "AQ.Ab8RN6LquOdh5DyS7PQ2pBTb0XWEIfwQ7lfa0vPOBRSYvnQEiA",
-    "AQ.Ab8RN6LLyC-O-9s0Y87RO5cigQgzaVXdOPko2469LvyLHE0vcg",
-    "AQ.Ab8RN6Kog_LmYfy0QMKS_vPLS29PLBQxdwKLOuhQZ7Eiehk0wg",
+    "AQ.Ab8RN6KFJ0o55aNdOwiyU81NhqkfC_GGvEDmf1thsIJ8dJILkQ",  # 1. Anahtar
+    "AQ.Ab8RN6LquOdh5DyS7PQ2pBTb0XWEIfwQ7lfa0vPOBRSYvnQEiA",  # 2. Anahtar
+    "AQ.Ab8RN6LLyC-O-9s0Y87RO5cigQgzaVXdOPko2469LvyLHE0vcg",  # 3. Anahtar
+    "AQ.Ab8RN6Kog_LmYfy0QMKS_vPLS29PLBQxdwKLOuhQZ7Eiehk0wg",  # 4. Anahtar
 ]
 
 # --- OTURUM DURUMU GÜVENLİK KONTROLÜ ---
@@ -30,7 +29,7 @@ if "hangman_guesses" not in st.session_state:
   st.session_state.hangman_guesses = []
 
 
-# --- RESMİ GOOGLE-GENAI SDK MOTORU (AQ. UYUMLU) ---
+# --- RESMİ GOOGLE-GENAI SDK MOTORU ---
 def get_ai_response(prompt, mode="soru"):
   if mode == "sohbet":
     system_instruction = (
@@ -48,11 +47,10 @@ def get_ai_response(prompt, mode="soru"):
     )
 
   errors = []
-  for idx, key in enumerate(API_KEYS]:
-    if not key or "..." in key:
+  for idx, key in enumerate(API_KEYS):
+    if not key:
       continue
     try:
-      # Resmi Google GenAI SDK istemcisi
       client = genai.Client(api_key=key)
 
       response = client.models.generate_content(
