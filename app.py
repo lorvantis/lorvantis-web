@@ -1,19 +1,10 @@
 import random
 import urllib.parse
-from google import genai
-from google.genai import types
+import requests
 import streamlit as st
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Lorvantis AI", page_icon="🤖", layout="centered")
-
-# --- SENİN 4 GERÇEK AQ. ANAHTARIN ---
-API_KEYS = [
-    "AQ.Ab8RN6KFJ0o55aNdOwiyU81NhqkfC_GGvEDmf1thsIJ8dJILkQ",  # 1. Anahtar
-    "AQ.Ab8RN6LquOdh5DyS7PQ2pBTb0XWEIfwQ7lfa0vPOBRSYvnQEiA",  # 2. Anahtar
-    "AQ.Ab8RN6LLyC-O-9s0Y87RO5cigQgzaVXdOPko2469LvyLHE0vcg",  # 3. Anahtar
-    "AQ.Ab8RN6Kog_LmYfy0QMKS_vPLS29PLBQxdwKLOuhQZ7Eiehk0wg",  # 4. Anahtar
-]
 
 # --- OTURUM DURUMU GÜVENLİK KONTROLÜ ---
 if "mode" not in st.session_state:
@@ -21,7 +12,10 @@ if "mode" not in st.session_state:
 if "messages" not in st.session_state:
   st.session_state.messages = [{
       "role": "assistant",
-      "content": "Selam kanka! Lorvantis AI aktif. Sana nasıl yardımcı olabilirim?",
+      "content": (
+          "Selam kanka! Lorvantis AI (Anahtarsız Sürüm) aktif. Sana nasıl"
+          " yardımcı olabilirim?"
+      ),
   }]
 if "hangman_word" not in st.session_state:
   st.session_state.hangman_word = ""
@@ -29,7 +23,7 @@ if "hangman_guesses" not in st.session_state:
   st.session_state.hangman_guesses = []
 
 
-# --- RESMİ GOOGLE-GENAI SDK MOTORU ---
+# --- ÜCRETSİZ VE ANAHTARSIZ POLLINATIONS METİN MOTORU ---
 def get_ai_response(prompt, mode="soru"):
   if mode == "sohbet":
     system_instruction = (
@@ -46,37 +40,33 @@ def get_ai_response(prompt, mode="soru"):
         " sorduğu sorulara son derece detaylı, açıklayıcı ve doğru yanıtlar ver."
     )
 
-  errors = []
-  for idx, key in enumerate(API_KEYS):
-    if not key:
-      continue
-    try:
-      client = genai.Client(api_key=key)
+  url = "https://text.pollinations.ai/"
+  payload = {
+      "messages": [
+          {"role": "system", "content": system_instruction},
+          {"role": "user", "content": prompt},
+      ],
+      "model": "openai",
+      "json": False,
+  }
 
-      response = client.models.generate_content(
-          model="gemini-1.5-flash",
-          contents=prompt,
-          config=types.GenerateContentConfig(
-              system_instruction=system_instruction,
-          ),
-      )
-
-      reply = response.text
+  try:
+    response = requests.post(url, json=payload, timeout=30)
+    if response.status_code == 200:
+      reply = response.text.strip()
       if mode == "soru":
         return (
             f"{reply}\n\n**Bu konu hakkında öğrenmek istediğin başka bir şey var"
             " mı?**"
         )
       return reply
-
-    except Exception as e:
-      errors.append(f"Key {idx + 1} Hata: {str(e)}")
-      continue
-
-  return (
-      "⚠️ **Sistem Bağlantı Hatası:** Anahtarlar doğrulanamadı.\n\n"
-      + " | ".join(errors)
-  )
+    else:
+      return (
+          "⚠️ **Bağlantı Hatası:** Sunucu şu an yoğun (Kod:"
+          f" {response.status_code}). Tekrar dene kanka."
+      )
+  except Exception as e:
+    return f"⚠️ **Sistem Hatası:** {str(e)}"
 
 
 # --- DİNAMİK ÜLKE MEME ÜRETİCİSİ ---
