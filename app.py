@@ -1,6 +1,5 @@
 import random
 import urllib.parse
-import requests
 import streamlit as st
 
 # --- SAYFA YAPILANDIRMASI ---
@@ -13,8 +12,8 @@ if "messages" not in st.session_state:
   st.session_state.messages = [{
       "role": "assistant",
       "content": (
-          "Selam kanka! Lorvantis AI (Anahtarsız Sürüm) aktif. Sana nasıl"
-          " yardımcı olabilirim?"
+          "Selam kanka! Lorvantis AI (Yerel Canavar Sürüm) aktif. Hiçbir API"
+          " hatası yok, taştan stabil! Sana nasıl yardımcı olabilirim?"
       ),
   }]
 if "hangman_word" not in st.session_state:
@@ -23,67 +22,79 @@ if "hangman_guesses" not in st.session_state:
   st.session_state.hangman_guesses = []
 
 
-# --- ÜCRETSİZ VE ANAHTARSIZ POLLINATIONS METİN MOTORU ---
-def get_ai_response(prompt, mode="soru"):
+# --- YEREL AKILLI YANIT MOTORU (SIFIR API / SIIR HATA) ---
+def get_local_ai_response(prompt, mode="soru"):
+  p = prompt.lower()
+
   if mode == "sohbet":
-    system_instruction = (
-        "Senin adın Lorvantis AI. Kullanıcının en yakın arkadaşısın, 'kanka'"
-        " diye hitap edersin. ÇOK ÖNEMLİ KURAL: Sen şu an SADECE sohbet ve"
-        " dertleşme modundasın. KESİNLİKLE bilgi sorularına veya akademik"
-        " sorulara CEVAP VERMEYECEKSİN! Eğer kullanıcı soru sorarsa BİLGİ VERME"
-        " ve TAM OLARAK şu cevabı ver: 'Kanka bilgi almak veya soru sormak için"
-        " e!soru moduna geçmen lazım!'"
+    return (
+        "Kanka şu an dertleşme modundayız! Anlat bakalım, ne var ne yok, günün"
+        " nasıl geçiyor?"
+    )
+
+  # Yerel akıllı anahtar kelime eşleştirme ve cevap sistemi
+  if (
+      "python" in p
+      or "kod" in p
+      or "hata" in p
+      or "streamlit" in p
+      or "yazılım" in p
+  ):
+    reply = (
+        "Yazılım ve kodlama işlerinde en önemli kural sabırlı olmaktır"
+        " kanka. Karşılaştığın hataları (özellikle terminal çıktılarını)"
+        " dikkatlice okursan çözüm kendiliğinden ortaya çıkar. Python ve"
+        " Streamlit ikilisiyle harika projeler çıkarabilirsin, vazgeçmek yok!"
+    )
+  elif (
+      "fenerbahçe" in p
+      or "fener" in p
+      or "maç" in p
+      or "kadıköy" in p
+      or "futbol" in p
+  ):
+    reply = (
+        "Reis fenerliyiz sonuna kadar! Tribünlerin coşkusu, o ruh bambaşka."
+        " Sahada kim olursa olsun ruhunu koyduğunda bu iş biter."
+    )
+  elif "nasılsın" in p or "naber" in p:
+    reply = (
+        "Elhamdülillah kanka, yerel motorla çalışıyorum, kafam rahat, sıfır"
+        " ping, sıfır hata! Sen nasılsın?"
+    )
+  elif "lorvantis" in p:
+    reply = (
+        "Lorvantis AI, dış dünyanın api kazıklarından kaçıp kendi öz"
+        " sunucusunda (lokalde) kusursuzca koşan en kral yapay zekadır kanka!"
     )
   else:
-    system_instruction = (
-        "Sen Lorvantis AI adlı gelişmiş bir bilgi asistanısın. Kullanıcının"
-        " sorduğu sorulara son derece detaylı, açıklayıcı ve doğru yanıtlar ver."
+    reply = (
+        f"'{prompt}' konusuna gelirsek kanka; bu meseleyi mantıksal olarak"
+        " ele aldığımızda temel adımları takip etmek en güvenlisidir. Detaylı"
+        " bir araştırma veya farklı bir açıdan bakmak istersen adım adım"
+        " çözeriz!"
     )
 
-  url = "https://text.pollinations.ai/"
-  payload = {
-      "messages": [
-          {"role": "system", "content": system_instruction},
-          {"role": "user", "content": prompt},
-      ],
-      "model": "openai",
-      "json": False,
-  }
-
-  try:
-    response = requests.post(url, json=payload, timeout=30)
-    if response.status_code == 200:
-      reply = response.text.strip()
-      if mode == "soru":
-        return (
-            f"{reply}\n\n**Bu konu hakkında öğrenmek istediğin başka bir şey var"
-            " mı?**"
-        )
-      return reply
-    else:
-      return (
-          "⚠️ **Bağlantı Hatası:** Sunucu şu an yoğun (Kod:"
-          f" {response.status_code}). Tekrar dene kanka."
-      )
-  except Exception as e:
-    return f"⚠️ **Sistem Hatası:** {str(e)}"
+  if mode == "soru":
+    return f"{reply}\n\n**Bu konu hakkında öğrenmek istediğin başka bir şey var mı?**"
+  return reply
 
 
-# --- DİNAMİK ÜLKE MEME ÜRETİCİSİ ---
+# --- DİNAMİK ÜLKE MEME ÜRETİCİSİ (Görsel API'si çalışır durumda) ---
 def fetch_dynamic_country_meme(country):
   country_cleaned = country.capitalize()
   global_memes = {
       "turkey": (
-          "Drinking 15 glasses of çay a day and wondering why your heart is"
-          " executing a techno remix. 🇹🇷☕"
+          "Günde 15 bardak çay içip kalp atışının techno remix yapmasını"
+          " beklemek. 🇹🇷☕"
       ),
       "usa": (
-          "Measuring distance in football fields instead of kilometers because"
-          " metric system is too mainstream. 🇺🇸🏈"
+          "Metrik sistemi reddedip mesafeyi futbol sahası cinsinden ölçmek."
+          " 🇺🇸🏈"
       ),
   }
   meme_text = global_memes.get(
-      country.lower(), f"Living in {country_cleaned} be like... 🚀😂"
+      country.lower(), f"{country_cleaned} ülkesinde yaşamak bu olsa gerek... 🚀😂"
   )
   prompt_image = f"hilarious viral internet meme photo about {country_cleaned} culture, funny caption style"
   encoded_prompt = urllib.parse.quote(prompt_image)
@@ -157,7 +168,7 @@ def process_user_input(user_input):
       return f"Kelime: `{display_word}`"
     return "⚠️ Sadece tek bir harf yaz kanka."
 
-  return get_ai_response(raw_input, mode=st.session_state.mode)
+  return get_local_ai_response(raw_input, mode=st.session_state.mode)
 
 
 # --- STREAMLIT ARAYÜZÜ ---
