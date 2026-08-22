@@ -1,5 +1,6 @@
 import random
 import urllib.parse
+from g4f.client import Client
 import streamlit as st
 
 # --- SAYFA YAPILANDIRMASI ---
@@ -12,8 +13,8 @@ if "messages" not in st.session_state:
   st.session_state.messages = [{
       "role": "assistant",
       "content": (
-          "Selam kanka! Lorvantis AI (Yerel Canavar Sürüm) aktif. Hiçbir API"
-          " hatası yok, taştan stabil! Sana nasıl yardımcı olabilirim?"
+          "Selam kanka! Lorvantis AI (Gerçek AI Sürüm) aktif. Sıfır anahtar,"
+          " sonsuz akıl! Sana nasıl yardımcı olabilirim?"
       ),
   }]
 if "hangman_word" not in st.session_state:
@@ -22,65 +23,51 @@ if "hangman_guesses" not in st.session_state:
   st.session_state.hangman_guesses = []
 
 
-# --- YEREL AKILLI YANIT MOTORU (SIFIR API / SIIR HATA) ---
-def get_local_ai_response(prompt, mode="soru"):
-  p = prompt.lower()
-
+# --- G4F ÜCRETSİZ GERÇEK YAPAY ZEKA MOTORU ---
+def get_real_ai_response(prompt, mode="soru"):
   if mode == "sohbet":
-    return (
-        "Kanka şu an dertleşme modundayız! Anlat bakalım, ne var ne yok, günün"
-        " nasıl geçiyor?"
-    )
-
-  # Yerel akıllı anahtar kelime eşleştirme ve cevap sistemi
-  if (
-      "python" in p
-      or "kod" in p
-      or "hata" in p
-      or "streamlit" in p
-      or "yazılım" in p
-  ):
-    reply = (
-        "Yazılım ve kodlama işlerinde en önemli kural sabırlı olmaktır"
-        " kanka. Karşılaştığın hataları (özellikle terminal çıktılarını)"
-        " dikkatlice okursan çözüm kendiliğinden ortaya çıkar. Python ve"
-        " Streamlit ikilisiyle harika projeler çıkarabilirsin, vazgeçmek yok!"
-    )
-  elif (
-      "fenerbahçe" in p
-      or "fener" in p
-      or "maç" in p
-      or "kadıköy" in p
-      or "futbol" in p
-  ):
-    reply = (
-        "Reis fenerliyiz sonuna kadar! Tribünlerin coşkusu, o ruh bambaşka."
-        " Sahada kim olursa olsun ruhunu koyduğunda bu iş biter."
-    )
-  elif "nasılsın" in p or "naber" in p:
-    reply = (
-        "Elhamdülillah kanka, yerel motorla çalışıyorum, kafam rahat, sıfır"
-        " ping, sıfır hata! Sen nasılsın?"
-    )
-  elif "lorvantis" in p:
-    reply = (
-        "Lorvantis AI, dış dünyanın api kazıklarından kaçıp kendi öz"
-        " sunucusunda (lokalde) kusursuzca koşan en kral yapay zekadır kanka!"
+    system_content = (
+        "Senin adın Lorvantis AI. Kullanıcının en yakın arkadaşısın, 'kanka'"
+        " diye hitap edersin. ÇOK ÖNEMLİ KURAL: Sen şu an SADECE sohbet ve"
+        " dertleşme modundasın. KESİNLİKLE bilgi sorularına veya akademik"
+        " sorulara CEVAP VERMEYECEKSİN! Eğer kullanıcı soru sorarsa BİLGİ VERME"
+        " ve TAM OLARAK şunu söyle: 'Kanka bilgi almak veya soru sormak için"
+        " e!soru moduna geçmen lazım!'"
     )
   else:
-    reply = (
-        f"'{prompt}' konusuna gelirsek kanka; bu meseleyi mantıksal olarak"
-        " ele aldığımızda temel adımları takip etmek en güvenlisidir. Detaylı"
-        " bir araştırma veya farklı bir açıdan bakmak istersen adım adım"
-        " çözeriz!"
+    system_content = (
+        "Sen Lorvantis AI adlı gelişmiş bir bilgi asistanısın. Kullanıcının"
+        " sorduğu sorulara (Windows kurulumu, yazılım, oyun vb.) son derece"
+        " detaylı, açıklayıcı, net ve doğru yanıtlar ver."
     )
 
-  if mode == "soru":
-    return f"{reply}\n\n**Bu konu hakkında öğrenmek istediğin başka bir şey var mı?**"
-  return reply
+  try:
+    client = Client()
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": system_content},
+            {"role": "user", "content": prompt},
+        ],
+    )
+
+    reply = response.choices[0].message.content.strip()
+
+    if mode == "soru":
+      return (
+          f"{reply}\n\n**Bu konu hakkında öğrenmek istediğin başka bir şey var"
+          " mı?**"
+      )
+    return reply
+
+  except Exception as e:
+    return (
+        "⚠️ **Bağlantı Notu:** Ücretsiz sağlayıcı yoğunluk yaptı kanka, bir"
+        f" daha yazarsan akacaktır (Hata: {str(e)})"
+    )
 
 
-# --- DİNAMİK ÜLKE MEME ÜRETİCİSİ (Görsel API'si çalışır durumda) ---
+# --- DİNAMİK ÜLKE MEME ÜRETİCİSİ ---
 def fetch_dynamic_country_meme(country):
   country_cleaned = country.capitalize()
   global_memes = {
@@ -168,7 +155,7 @@ def process_user_input(user_input):
       return f"Kelime: `{display_word}`"
     return "⚠️ Sadece tek bir harf yaz kanka."
 
-  return get_local_ai_response(raw_input, mode=st.session_state.mode)
+  return get_real_ai_response(raw_input, mode=st.session_state.mode)
 
 
 # --- STREAMLIT ARAYÜZÜ ---
